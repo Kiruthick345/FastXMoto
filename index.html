@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FastXMoto - Used Bikes Buying & Selling Records</title>
+  <link rel="icon" type="image/jpeg" href="logo.jpg">
+  <link rel="apple-touch-icon" href="logo.jpg">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+            },
+            surface: {
+              900: '#0a0f1d',
+              850: '#0f172a',
+              800: '#111827',
+              750: '#1e293b',
+              700: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-surface-900 text-slate-100 antialiased selection:bg-brand-500 selection:text-white min-h-screen">
+
+  <!-- ========================================================================== -->
+  <!-- ADMIN AUTHENTICATION GATE SCREEN                                           -->
+  <!-- ========================================================================== -->
+  <div id="admin-login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-900/95 backdrop-blur-xl">
+    <div class="w-full max-w-md bg-surface-850/90 border border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden glass-card">
+      
+      <!-- Top Decorative Accent -->
+      <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-500 via-amber-500 to-purple-500"></div>
+
+      <!-- Brand Logo & Header -->
+      <div class="text-center mb-6">
+        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden mx-auto mb-3 shadow-2xl shadow-brand-500/30 border-2 border-brand-500/50 bg-black">
+          <img src="logo.jpg" alt="FastX Moto Logo" class="w-full h-full object-cover">
+        </div>
+        <h1 class="text-2xl font-black tracking-tight text-white">
+          FastX<span class="text-brand-500">Moto</span>
+        </h1>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mt-1">Admin Security Portal</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">Please authenticate to access dealership records & workshop hub</p>
+      </div>
+
+      <!-- Login Form -->
+      <form id="admin-login-form" class="space-y-4 text-xs">
+        <!-- Error Alert -->
+        <div id="login-error-msg" class="hidden p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 font-medium flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-400"></i>
+          <span id="login-error-text">Invalid username or password. Please try again.</span>
+        </div>
+
+        <!-- Username -->
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Admin Username</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="user" class="w-4 h-4"></i>
+            </div>
+            <input 
+              type="text" 
+              id="login-username" 
+              required 
+              value="admin" 
+              placeholder="Username" 
+              class="w-full bg-surface-900 border border-slate-700 rounded-xl pl-10 pr-3 py-2.5 text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-500 font-medium"
+            >
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Admin Password</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="lock" class="w-4 h-4"></i>
+            </div>
+            <input 
+              type="password" 
+              id="login-password" 
+              required 
+              placeholder="Enter password" 
+              class="w-full bg-surface-900 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-500 font-medium"
+            >
+            <button 
+              type="button" 
+              id="toggle-pwd-visibility-btn" 
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200"
+            >
+              <i data-lucide="eye" id="toggle-pwd-icon" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember Me Checkbox -->
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+            <input type="checkbox" id="login-remember" checked class="w-3.5 h-3.5 rounded border-slate-700 text-brand-500 focus:ring-brand-500">
+            <span>Remember login on this browser</span>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          id="login-submit-btn" 
+          class="w-full py-2.5 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-amber-500 hover:from-brand-600 hover:to-amber-600 shadow-lg shadow-brand-500/25 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+        >
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Sign In to FastXMoto</span>
+        </button>
+
+        <!-- Clickable Standard Credentials Pill -->
+        <div class="pt-2 text-center">
+          <button 
+            type="button" 
+            id="autofill-credentials-btn" 
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-750 text-slate-400 hover:text-slate-200 border border-slate-700 text-[11px] transition-colors"
+          >
+            <i data-lucide="key" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Default: <strong>admin</strong> / <strong>FastX@2026</strong> (Click to autofill)</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION CONTAINER ==================== -->
+  <div id="main-app-container">
+
+    <!-- ==================== HEADER ==================== -->
+    <header class="sticky top-0 z-30 glass-panel border-b border-slate-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+        
+        <!-- Brand Logo & Subtitle -->
+        <div class="flex items-center gap-3 cursor-pointer" onclick="switchModule('inventory')">
+          <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden shadow-lg shadow-brand-500/30 border border-brand-500/40 bg-black flex-shrink-0">
+            <img src="logo.jpg" alt="FastX Moto Logo" class="w-full h-full object-cover">
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent">
+                FastX<span class="text-brand-500">Moto</span>
+              </span>
+              <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 hidden sm:inline-block">
+                Pro Dealership
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400">Used Bikes & Workshop Management Portal</p>
+          </div>
+        </div>
+
+        <!-- MODULE NAVIGATION TABS (Primary Switcher) -->
+        <nav class="hidden md:flex items-center p-1 bg-surface-850 border border-slate-800 rounded-xl">
+          <button id="nav-tab-inventory" class="nav-module-btn active flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-brand-500 text-white shadow-md transition-all">
+            <i data-lucide="bike" class="w-4 h-4"></i>
+            <span>Inventory & Sales</span>
+          </button>
+          <button id="nav-tab-workshop" class="nav-module-btn flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition-all">
+            <i data-lucide="wrench" class="w-4 h-4 text-purple-400"></i>
+            <span>Workshop & Repairs Hub</span>
+            <span id="nav-workshop-badge" class="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-300 font-mono-numbers">0</span>
+          </button>
+        </nav>
+
+        <!-- Right Side: Preferences & Admin Controls -->
+        <div class="flex items-center gap-2">
+          <!-- Currency Selector -->
+          <div class="relative">
+            <select id="currency-selector" class="bg-surface-850 border border-slate-700 text-xs font-semibold text-slate-200 rounded-lg px-2.5 py-2 pr-7 appearance-none cursor-pointer focus:outline-none focus:border-brand-500 transition-colors">
+              <option value="INR" selected>₹ INR</option>
+              <option value="USD">$ USD</option>
+              <option value="EUR">€ EUR</option>
+              <option value="GBP">£ GBP</option>
+              <option value="AED">AED</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-1.5 pointer-events-none text-slate-400">
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+
+          <!-- Data Dropdown Trigger -->
+          <div class="relative">
+            <button id="export-dropdown-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 hover:bg-surface-750 text-slate-300 border border-slate-700/80 transition-colors">
+              <i data-lucide="download" class="w-4 h-4 text-cyan-400"></i>
+              <span class="hidden sm:inline">Data</span>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-0.5 text-slate-400"></i>
+            </button>
+            <div id="export-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-surface-800 border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
+              <button id="export-csv-btn" class="w-full text-left px-4 py-2 hover:bg-slate-700/60 flex items-center gap-2 text-slate-200">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+                Export to CSV (Excel)
+              </button>
+              <button id="export-json-btn" class="w-full text-left px-4 py-2 hover:bg-slate-700/60 flex items-center gap-2 text-slate-200">
+                <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
+                Download JSON Backup
+              </button>
+              <label class="w-full text-left px-4 py-2 hover:bg-slate-700/60 flex items-center gap-2 text-slate-200 cursor-pointer">
+                <i data-lucide="upload" class="w-4 h-4 text-amber-400"></i>
+                Import JSON Backup
+                <input type="file" id="import-json-input" accept=".json" class="hidden">
+              </label>
+              <div class="border-t border-slate-700 my-1"></div>
+              <button id="clear-all-btn" class="w-full text-left px-4 py-2 hover:bg-rose-500/10 text-rose-300 flex items-center gap-2">
+                <i data-lucide="trash-2" class="w-4 h-4 text-rose-400"></i>
+                Clear All Records
+              </button>
+              <button id="load-sample-btn" class="w-full text-left px-4 py-2 hover:bg-amber-500/10 text-amber-300 flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                Load Sample Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Admin Profile & Security Controls -->
+          <div class="flex items-center pl-1 border-l border-slate-800 gap-1.5">
+            <!-- Admin Badge -->
+            <span class="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-800 border border-slate-700/80 text-xs font-semibold text-slate-300">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Admin
+            </span>
+
+            <!-- Change Password Button -->
+            <button id="open-change-pwd-btn" class="p-2 rounded-lg bg-surface-800 hover:bg-surface-750 text-slate-400 hover:text-amber-400 border border-slate-700/80 transition-colors" title="Change Admin Password">
+              <i data-lucide="key" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Logout Button -->
+            <button id="logout-btn" class="flex items-center gap-1 px-2.5 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-colors" title="Sign Out">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Mobile Module Switcher Bar -->
+      <div class="md:hidden border-t border-slate-800/80 px-4 py-2 bg-surface-850 flex items-center justify-center gap-2">
+        <button id="mobile-nav-tab-inventory" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-brand-500 text-white flex items-center justify-center gap-1.5 shadow-sm transition-all">
+          <i data-lucide="bike" class="w-4 h-4"></i>
+          <span>Inventory & Sales</span>
+        </button>
+        <button id="mobile-nav-tab-workshop" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-surface-800 text-slate-300 border border-slate-700/60 flex items-center justify-center gap-1.5 transition-all">
+          <i data-lucide="wrench" class="w-4 h-4 text-purple-400"></i>
+          <span>Workshop Hub</span>
+          <span id="mobile-nav-workshop-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-500/20 text-purple-300 font-mono">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================================================== -->
+    <!-- MODULE 1: INVENTORY & SALES MODULE                                         -->
+    <!-- ========================================================================== -->
+    <main id="module-inventory" class="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
+      
+      <!-- Top Actions Bar: Global Search & Add Bike -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+        <!-- Search Bar -->
+        <div class="flex-1 max-w-lg relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </div>
+          <input 
+            type="text" 
+            id="global-search-input" 
+            placeholder="Search by Bike, Reg No, Buyer or Seller..." 
+            class="w-full bg-surface-850/80 border border-slate-700/80 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all shadow-inner"
+          >
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <kbd class="text-[10px] font-mono bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">/</kbd>
+          </div>
+        </div>
+
+        <!-- Add Bike Primary Button & Toggle Analytics -->
+        <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5">
+          <button id="toggle-analytics-btn" class="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-surface-800 hover:bg-surface-750 text-slate-300 border border-slate-700/80 transition-colors w-full sm:w-auto" title="Toggle Visual Charts">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-400"></i>
+            <span>Analytics</span>
+          </button>
+
+          <button id="open-add-bike-modal-btn" class="flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-brand-500 to-amber-500 hover:from-brand-600 hover:to-amber-600 text-white shadow-lg shadow-brand-500/25 transition-all transform active:scale-95 w-full sm:w-auto">
+            <i data-lucide="plus-circle" class="w-4 h-4 stroke-[2.5]"></i>
+            <span class="whitespace-nowrap">Add Bike Record</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI CARDS SUMMARY -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        
+        <!-- Card 1: Active Inventory -->
+        <div class="glass-card rounded-2xl p-3.5 sm:p-5 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2 sm:mb-3">
+              <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Active Stock</span>
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="warehouse" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-1.5 mb-1">
+              <span id="kpi-stock-count" class="text-2xl sm:text-3xl font-extrabold text-white font-mono-numbers">0</span>
+              <span class="text-[11px] sm:text-xs text-slate-400">bikes</span>
+            </div>
+          </div>
+          <div class="text-[11px] sm:text-xs text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-slate-800/80 gap-0.5">
+            <span class="text-[10px] sm:text-xs text-slate-500">Capital Invested:</span>
+            <span id="kpi-inventory-value" class="font-semibold text-slate-200 font-mono-numbers">₹0</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Sold Bikes & Total Sales -->
+        <div class="glass-card rounded-2xl p-3.5 sm:p-5 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2 sm:mb-3">
+              <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Bikes Sold</span>
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">
+                <i data-lucide="check-check" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-1.5 mb-1">
+              <span id="kpi-sold-count" class="text-2xl sm:text-3xl font-extrabold text-white font-mono-numbers">0</span>
+              <span class="text-[11px] sm:text-xs text-slate-400">units</span>
+            </div>
+          </div>
+          <div class="text-[11px] sm:text-xs text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-slate-800/80 gap-0.5">
+            <span class="text-[10px] sm:text-xs text-slate-500">Sales Revenue:</span>
+            <span id="kpi-sales-revenue" class="font-semibold text-blue-400 font-mono-numbers">₹0</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Realized Net Profit -->
+        <div class="glass-card rounded-2xl p-3.5 sm:p-5 relative overflow-hidden border-brand-500/30 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2 sm:mb-3">
+              <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Net Profit</span>
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                <i data-lucide="trending-up" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-1.5 mb-1">
+              <span id="kpi-net-profit" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono-numbers">₹0</span>
+            </div>
+          </div>
+          <div class="text-[11px] sm:text-xs text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-slate-800/80 gap-0.5">
+            <span class="text-[10px] sm:text-xs text-slate-500">Margin:</span>
+            <span id="kpi-profit-margin" class="font-semibold text-emerald-300 font-mono-numbers">0%</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Refurbishment / Workshop Investment -->
+        <div class="glass-card rounded-2xl p-3.5 sm:p-5 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2 sm:mb-3">
+              <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Repairs Spend</span>
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center">
+                <i data-lucide="wrench" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-1.5 mb-1">
+              <span id="kpi-refurbish-total" class="text-2xl sm:text-3xl font-extrabold text-purple-300 font-mono-numbers">₹0</span>
+            </div>
+          </div>
+          <div class="text-[11px] sm:text-xs text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-slate-800/80 gap-0.5">
+            <span class="text-[10px] sm:text-xs text-slate-500">Reserved:</span>
+            <span id="kpi-reserved-count" class="font-semibold text-amber-400 font-mono-numbers">0 reserved</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ANALYTICS SECTION (Expandable / Collapsible) -->
+      <section id="analytics-panel" class="glass-panel rounded-2xl p-6 border border-slate-800/80 shadow-2xl transition-all">
+        <!-- Analytics Header & Month Selector -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-5 h-5 text-brand-400"></i>
+              Business Analytics & Dealership Performance
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Real-time revenue, margins, and monthly financial review</p>
+          </div>
+          
+          <div class="flex items-center flex-wrap gap-3">
+            <!-- Monthly Selector -->
+            <div class="flex items-center gap-2 bg-surface-900 border border-slate-700/80 rounded-xl px-3 py-1.5 shadow-sm">
+              <i data-lucide="calendar" class="w-4 h-4 text-brand-400"></i>
+              <label for="analytics-month-select" class="text-xs font-semibold text-slate-300 whitespace-nowrap">Filter Month:</label>
+              <select id="analytics-month-select" class="bg-surface-900 border-none text-xs font-bold text-brand-300 focus:outline-none cursor-pointer">
+                <option value="ALL">All Time (Cumulative)</option>
+              </select>
+            </div>
+            <div class="text-xs font-medium text-slate-400 flex items-center gap-2 pl-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Computed
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly KPI Strip -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6" id="analytics-monthly-kpis">
+          <!-- 1. Purchases in Month -->
+          <div class="bg-surface-850/80 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+              <span class="text-[11px] font-semibold uppercase tracking-wider">Bikes Bought</span>
+              <div class="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-1.5 mt-1">
+              <span id="monthly-kpi-buy-count" class="text-xl font-extrabold text-white font-mono-numbers">0</span>
+              <span class="text-[11px] text-slate-400">units</span>
+            </div>
+            <div class="text-[11px] font-mono-numbers font-semibold text-emerald-400 mt-1">
+              Invested: <span id="monthly-kpi-buy-spend">₹0</span>
+            </div>
+          </div>
+
+          <!-- 2. Sales in Month -->
+          <div class="bg-surface-850/80 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+              <span class="text-[11px] font-semibold uppercase tracking-wider">Bikes Sold</span>
+              <div class="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">
+                <i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-1.5 mt-1">
+              <span id="monthly-kpi-sold-count" class="text-xl font-extrabold text-white font-mono-numbers">0</span>
+              <span class="text-[11px] text-slate-400">units</span>
+            </div>
+            <div class="text-[11px] font-mono-numbers font-semibold text-blue-400 mt-1">
+              Revenue: <span id="monthly-kpi-sold-rev">₹0</span>
+            </div>
+          </div>
+
+          <!-- 3. Workshop Repairs in Month -->
+          <div class="bg-surface-850/80 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+              <span class="text-[11px] font-semibold uppercase tracking-wider">Workshop Spend</span>
+              <div class="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center">
+                <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-1.5 mt-1">
+              <span id="monthly-kpi-repairs-spend" class="text-xl font-extrabold text-purple-300 font-mono-numbers">₹0</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+              <span id="monthly-kpi-repairs-count">0</span> repair jobs logged
+            </div>
+          </div>
+
+          <!-- 4. Realized Net Profit in Month -->
+          <div class="bg-surface-850/80 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+              <span class="text-[11px] font-semibold uppercase tracking-wider">Net Realized Profit</span>
+              <div class="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-1.5 mt-1">
+              <span id="monthly-kpi-net-profit" class="text-xl font-extrabold text-emerald-400 font-mono-numbers">+₹0</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+              <span id="monthly-kpi-profit-margin" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">0% Margin</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Monthly Financial Performance -->
+          <div class="lg:col-span-2 bg-surface-850/60 rounded-xl p-4 border border-slate-800">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-400"></i>
+                <span id="financials-chart-title">Financial Performance Breakdown</span>
+              </h3>
+              <span id="financials-chart-period" class="text-[11px] text-brand-400 font-mono">All Time</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="financials-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Inventory by Status & Top Brands -->
+          <div class="bg-surface-850/60 rounded-xl p-4 border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                  <i data-lucide="tag" class="w-4 h-4 text-brand-400"></i>
+                  Brand Distribution
+                </h3>
+                <span id="brand-chart-period" class="text-[11px] text-brand-400 font-mono">Dealership</span>
+              </div>
+              <div class="h-56 relative flex items-center justify-center">
+                <canvas id="brand-chart"></canvas>
+              </div>
+            </div>
+            <div id="brand-stats-pills" class="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-slate-800/80">
+              <!-- Dynamically populated tags -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly Detailed Activity & Transaction Review -->
+        <div id="analytics-monthly-review-section" class="mt-6 pt-6 border-t border-slate-800">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-400"></i>
+                <span id="monthly-review-title">Activity & Transaction Review</span>
+              </h3>
+              <p class="text-xs text-slate-400" id="monthly-review-subtitle">Audit all vehicle purchases, customer sales, and workshop repair costs</p>
+            </div>
+
+            <!-- Activity Filter Type inside monthly review -->
+            <div class="flex items-center gap-1.5 bg-surface-900 border border-slate-700/80 p-1 rounded-xl text-xs overflow-x-auto scrollbar-none touch-pan-x max-w-full" id="monthly-activity-filter-group">
+              <button type="button" data-activity="ALL" class="monthly-act-btn active px-2.5 py-1 rounded-lg font-semibold bg-brand-500 text-white transition-all whitespace-nowrap">All (<span id="mact-count-all">0</span>)</button>
+              <button type="button" data-activity="BUY" class="monthly-act-btn px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition-all whitespace-nowrap">Purchased (<span id="mact-count-buy">0</span>)</button>
+              <button type="button" data-activity="SELL" class="monthly-act-btn px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition-all whitespace-nowrap">Sold (<span id="mact-count-sell">0</span>)</button>
+              <button type="button" data-activity="REPAIR" class="monthly-act-btn px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition-all whitespace-nowrap">Repairs (<span id="mact-count-repair">0</span>)</button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-slate-800 bg-surface-900/60 touch-pan-x">
+            <table class="w-full text-left text-xs border-collapse min-w-[580px]">
+              <thead>
+                <tr class="border-b border-slate-800 bg-surface-850/80 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <th class="py-3 px-4">Date</th>
+                  <th class="py-3 px-3">Type</th>
+                  <th class="py-3 px-4">Motorcycle</th>
+                  <th class="py-3 px-3">Party / Item Details</th>
+                  <th class="py-3 px-4 text-right">Financial Impact</th>
+                </tr>
+              </thead>
+              <tbody id="monthly-review-tbody" class="divide-y divide-slate-800/60">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+            <div id="monthly-review-empty" class="hidden text-center py-8 text-xs text-slate-400">
+              No transactions or repair activities recorded for this period.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTROLS, SEARCH & FILTER BAR -->
+      <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          <!-- Status Filter Tabs -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1.5 md:pb-0 scrollbar-none touch-pan-x" id="status-filters">
+            <button data-status="ALL" class="status-tab-btn active px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-brand-500 text-white shadow-md transition-all whitespace-nowrap">
+              All Records <span id="count-all" class="ml-1 opacity-80">(0)</span>
+            </button>
+            <button data-status="In Stock" class="status-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-850 hover:bg-surface-750 text-slate-300 border border-slate-700/60 transition-all whitespace-nowrap">
+              In Stock <span id="count-instock" class="ml-1 text-emerald-400 font-mono-numbers">(0)</span>
+            </button>
+            <button data-status="Sold" class="status-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-850 hover:bg-surface-750 text-slate-300 border border-slate-700/60 transition-all whitespace-nowrap">
+              Sold <span id="count-sold" class="ml-1 text-blue-400 font-mono-numbers">(0)</span>
+            </button>
+            <button data-status="Reserved" class="status-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-850 hover:bg-surface-750 text-slate-300 border border-slate-700/60 transition-all whitespace-nowrap">
+              Reserved <span id="count-reserved" class="ml-1 text-amber-400 font-mono-numbers">(0)</span>
+            </button>
+            <button data-status="Refurbishing" class="status-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-850 hover:bg-surface-750 text-slate-300 border border-slate-700/60 transition-all whitespace-nowrap">
+              Refurbishing <span id="count-refurbishing" class="ml-1 text-purple-400 font-mono-numbers">(0)</span>
+            </button>
+          </div>
+
+          <!-- Secondary Filters & View Switcher -->
+          <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap w-full md:w-auto">
+            <!-- Brand Filter -->
+            <select id="filter-brand" class="flex-1 sm:flex-initial min-w-[120px] bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 sm:py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:border-brand-500">
+              <option value="ALL">All Brands</option>
+              <option value="Royal Enfield">Royal Enfield</option>
+              <option value="Yamaha">Yamaha</option>
+              <option value="Honda">Honda</option>
+              <option value="KTM">KTM</option>
+              <option value="Bajaj">Bajaj</option>
+              <option value="TVS">TVS</option>
+              <option value="Kawasaki">Kawasaki</option>
+              <option value="Suzuki">Suzuki</option>
+              <option value="Hero">Hero</option>
+              <option value="Harley-Davidson">Harley-Davidson</option>
+              <option value="BMW">BMW</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <!-- Sort Filter -->
+            <select id="sort-selector" class="flex-1 sm:flex-initial min-w-[140px] bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 sm:py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:border-brand-500">
+              <option value="date-desc">Newest Added</option>
+              <option value="date-asc">Oldest Added</option>
+              <option value="profit-desc">Highest Net Profit</option>
+              <option value="price-desc">Highest Selling Price</option>
+              <option value="price-asc">Lowest Selling Price</option>
+              <option value="year-desc">Manufacture Year (Newest)</option>
+            </select>
+
+            <!-- View Mode Toggle -->
+            <div class="flex items-center bg-surface-850 border border-slate-700 rounded-xl p-0.5 ml-auto sm:ml-0">
+              <button id="view-mode-table" class="view-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-brand-500 text-white shadow-sm transition-all" title="Detailed Table View">
+                <i data-lucide="list" class="w-4 h-4"></i>
+              </button>
+              <button id="view-mode-grid" class="view-btn px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all" title="Showroom Card View">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- RECORDS DISPLAY SECTION -->
+      <section id="records-container" class="space-y-4">
+        
+        <!-- Table View Container -->
+        <div id="table-view" class="overflow-hidden glass-panel rounded-2xl border border-slate-800 shadow-xl">
+          <div class="overflow-x-auto touch-pan-x">
+            <table class="w-full text-left border-collapse min-w-[680px]">
+              <thead>
+                <tr class="border-b border-slate-800 bg-surface-850/80 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <th class="py-3.5 px-4">Bike / Registration</th>
+                  <th class="py-3.5 px-3">Specs</th>
+                  <th class="py-3.5 px-3">Purchase Record (Buying)</th>
+                  <th class="py-3.5 px-3">Workshop / Refurbish</th>
+                  <th class="py-3.5 px-3">Selling Record</th>
+                  <th class="py-3.5 px-3">Net Profit / Margin</th>
+                  <th class="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="bikes-table-body" class="divide-y divide-slate-800/80 text-xs text-slate-200">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Grid / Card View Container -->
+        <div id="grid-view" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="empty-state" class="hidden text-center py-16 px-4 glass-panel rounded-2xl border border-slate-800">
+          <div class="w-16 h-16 rounded-2xl bg-slate-800/80 text-slate-400 flex items-center justify-center mx-auto mb-4 border border-slate-700">
+            <i data-lucide="bike" class="w-8 h-8 text-brand-400"></i>
+          </div>
+          <h3 class="text-base font-bold text-white mb-1">No Motorcycle Records Yet</h3>
+          <p class="text-xs text-slate-400 max-w-sm mx-auto mb-6">
+            Your inventory and sales book is ready. Click below to add your first bike purchase or sale record.
+          </p>
+          <div class="flex items-center justify-center gap-3">
+            <button id="empty-add-bike-btn" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 transition-all">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Add First Bike Record
+            </button>
+            <button id="empty-load-sample-btn" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold bg-surface-850 hover:bg-surface-750 text-slate-300 border border-slate-700 transition-all">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+              Load Sample Data
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- ========================================================================== -->
+    <!-- MODULE 2: WORKSHOP & REPAIRS MODULE (STREAMLINED BY REGISTRATION NO.)      -->
+    <!-- ========================================================================== -->
+    <main id="module-workshop" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      
+      <!-- Clean Workshop Header -->
+      <div class="glass-panel rounded-2xl p-6 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center border border-purple-500/20">
+            <i data-lucide="wrench" class="w-6 h-6 stroke-[2.2]"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-extrabold text-white tracking-tight">Workshop & Vehicle Repairs</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Enter a vehicle registration number to record repairs & automatically update inventory cost</p>
+          </div>
+        </div>
+
+        <!-- Quick Summary Badge -->
+        <div class="flex items-center gap-3">
+          <div class="px-4 py-2 rounded-xl bg-surface-850 border border-slate-700/80 text-right">
+            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Total Workshop Spend</span>
+            <span id="ws-summary-total-spend" class="text-base font-extrabold text-purple-300 font-mono-numbers">₹0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIRECT QUICK-ADD REPAIR BY REGISTRATION NO. FORM -->
+      <div class="glass-panel rounded-2xl p-6 border border-purple-500/30 bg-gradient-to-r from-purple-950/20 via-surface-850 to-surface-850 shadow-xl">
+        <div class="flex items-center gap-2 mb-4 text-xs font-bold text-purple-300 uppercase tracking-wider">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-purple-400"></i>
+          <span>Add Repair by Vehicle Registration Number</span>
+        </div>
+
+        <form id="ws-direct-repair-form" class="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
+          <!-- Reg Number Input with Datalist Autocomplete -->
+          <div class="md:col-span-4">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+              Registration Number *
+            </label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="ws-input-reg-no" 
+                list="ws-reg-datalist" 
+                required 
+                placeholder="e.g. MH 12 AB 4589" 
+                class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 font-bold"
+              >
+              <datalist id="ws-reg-datalist">
+                <!-- Dynamically populated with all bikes from inventory -->
+              </datalist>
+            </div>
+            <!-- Auto-detected Bike Hint -->
+            <div id="ws-detected-bike-badge" class="hidden mt-1.5 text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
+              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              <span id="ws-detected-bike-text"></span>
+            </div>
+          </div>
+
+          <!-- Repair Work Description -->
+          <div class="md:col-span-5">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+              Repair / Work Description *
+            </label>
+            <input 
+              type="text" 
+              id="ws-input-repair-desc" 
+              required 
+              placeholder="e.g. Front Fork Oil & Seals, New Rear Tyre, Engine Service" 
+              class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+            >
+          </div>
+
+          <!-- Repair Cost & Submit -->
+          <div class="md:col-span-3 flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+            <div class="w-full sm:flex-1">
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+                Repair Cost (<span class="currency-label">₹</span>) *
+              </label>
+              <input 
+                type="number" 
+                id="ws-input-repair-cost" 
+                required 
+                min="1" 
+                step="50" 
+                placeholder="Cost in ₹" 
+                class="w-full font-mono-numbers font-bold text-purple-300 bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-purple-500"
+              >
+            </div>
+
+            <!-- Submit Button -->
+            <div class="w-full sm:w-auto flex-shrink-0">
+              <button 
+                type="submit" 
+                class="w-full sm:w-auto h-[40px] px-5 rounded-xl font-bold text-xs bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/25 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+              >
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
+                <span>Add Repair</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Live confirmation pill -->
+        <div id="ws-repair-success-alert" class="hidden mt-3 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between">
+          <span id="ws-repair-success-msg"></span>
+          <button type="button" id="ws-success-view-inventory-btn" class="underline hover:text-white">View in Inventory →</button>
+        </div>
+      </div>
+
+      <!-- REPAIR RECORDS TABLE -->
+      <div class="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="p-4 bg-surface-850/80 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-bold text-white">Vehicle Repair Records</h3>
+            <span id="ws-records-count-badge" class="px-2 py-0.5 rounded-full text-[11px] bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 vehicles</span>
+          </div>
+
+          <!-- Quick Search in Repairs -->
+          <div class="relative w-full sm:w-64">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5"></i>
+            <input 
+              type="text" 
+              id="ws-simple-search" 
+              placeholder="Search by Reg No or Repair..." 
+              class="w-full bg-surface-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-purple-500"
+            >
+          </div>
+        </div>
+
+        <div class="overflow-x-auto touch-pan-x">
+          <table class="w-full text-left text-xs border-collapse min-w-[620px]">
+            <thead>
+              <tr class="border-b border-slate-800 bg-surface-850/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <th class="py-3 px-4">Registration No.</th>
+                <th class="py-3 px-3">Vehicle / Model</th>
+                <th class="py-3 px-3">Repairs & Work Logged</th>
+                <th class="py-3 px-3 text-right">Total Workshop Cost</th>
+                <th class="py-3 px-3 text-center">Inventory Status</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ws-simple-table-body" class="divide-y divide-slate-800/60 text-slate-200">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="ws-simple-empty-state" class="hidden text-center py-12 px-4">
+          <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="wrench" class="w-6 h-6"></i>
+          </div>
+          <h4 class="text-sm font-bold text-white mb-1">No Workshop Repairs Logged Yet</h4>
+          <p class="text-xs text-slate-400 max-w-sm mx-auto">
+            Enter a vehicle registration number above to log repairs and immediately update its cost in the inventory.
+          </p>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="mt-16 border-t border-slate-800/80 bg-surface-900/60 py-8 text-center text-xs text-slate-500">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2.5">
+          <img src="logo.jpg" alt="FastX Moto" class="w-6 h-6 rounded-lg object-cover border border-slate-700/80 shadow-sm">
+          <span class="font-bold text-slate-300">FastXMoto</span>
+          <span>•</span>
+          <span>Used Bikes Buying, Selling & Workshop Management System</span>
+        </div>
+        <div class="flex items-center gap-4 text-slate-400">
+          <button id="footer-export-btn" class="hover:text-brand-400 transition-colors">Export CSV</button>
+          <span>•</span>
+          <button id="footer-print-summary-btn" class="hover:text-brand-400 transition-colors">Print Dealership Report</button>
+          <span>•</span>
+          <span>Auto-saved to Local Storage</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ========================================================================== -->
+  <!-- MODALS SECTION                                                             -->
+  <!-- ========================================================================== -->
+
+  <!-- 1. ADD / EDIT BIKE RECORD MODAL -->
+  <div id="bike-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-hidden modal-overlay bg-black/75 backdrop-blur-sm">
+    <div class="modal-content bg-surface-850 border border-slate-700/80 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-surface-800/70">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl overflow-hidden border border-brand-500/40 bg-black flex-shrink-0 shadow-sm">
+            <img src="logo.jpg" alt="FastX Moto Logo" class="w-full h-full object-cover">
+          </div>
+          <div>
+            <h3 id="bike-modal-title" class="text-base font-bold text-white">Add Motorcycle Record</h3>
+            <p class="text-xs text-slate-400">Log buying details, condition, refurbishment costs, and sales info</p>
+          </div>
+        </div>
+        <button id="close-bike-modal-btn" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="bike-form" class="overflow-y-auto p-6 space-y-6 flex-1 text-xs">
+        <input type="hidden" id="form-bike-id" value="">
+
+        <!-- SECTION 1: VEHICLE SPECIFICATIONS -->
+        <div>
+          <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800 text-brand-400 font-bold uppercase tracking-wider text-[11px]">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>1. Vehicle Specifications</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Make / Brand *</label>
+              <input type="text" id="form-brand" required placeholder="e.g. Royal Enfield, Yamaha" list="brand-suggestions" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+              <datalist id="brand-suggestions">
+                <option value="Royal Enfield">
+                <option value="Yamaha">
+                <option value="KTM">
+                <option value="Honda">
+                <option value="Bajaj">
+                <option value="TVS">
+                <option value="Kawasaki">
+                <option value="Suzuki">
+                <option value="Hero">
+                <option value="Harley-Davidson">
+                <option value="BMW">
+                <option value="Triumph">
+              </datalist>
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Model Name *</label>
+              <input type="text" id="form-model" required placeholder="e.g. Classic 350, MT-15" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Variant / Edition</label>
+              <input type="text" id="form-variant" placeholder="e.g. Dual ABS, Signals" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Registration No. *</label>
+              <input type="text" id="form-reg-number" required placeholder="e.g. MH 12 AB 1234" class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Year of Make *</label>
+              <input type="number" id="form-year" required min="1990" max="2030" value="2023" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Engine Capacity (CC)</label>
+              <input type="number" id="form-engine-cc" placeholder="e.g. 350" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: PURCHASE (BUYING) RECORD -->
+        <div>
+          <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800 text-emerald-400 font-bold uppercase tracking-wider text-[11px]">
+            <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+            <span>2. Purchase (Buying) Information</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Purchase Date *</label>
+              <input type="date" id="form-purchase-date" required class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Purchase Price (<span class="currency-label">₹</span>) *</label>
+              <input type="number" id="form-purchase-price" required min="0" step="500" placeholder="e.g. 140000" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-bold text-sm focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Purchased From (Seller Name) *</label>
+              <input type="text" id="form-seller-name" required placeholder="Full Name of Previous Owner" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Seller Phone Number</label>
+              <input type="tel" id="form-seller-phone" placeholder="e.g. +91 98230 12345" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: WORKSHOP REFURBISHMENT EXPENSES -->
+        <div class="bg-surface-900/60 p-4 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 text-purple-400 font-bold uppercase tracking-wider text-[11px]">
+              <i data-lucide="wrench" class="w-4 h-4"></i>
+              <span>3. Refurbishment & Workshop Expenses</span>
+            </div>
+            <button type="button" id="form-add-refurb-btn" class="flex items-center gap-1 text-[11px] font-semibold text-purple-400 hover:text-purple-300 px-2 py-1 rounded bg-purple-500/10 border border-purple-500/30">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              Add Expense Item
+            </button>
+          </div>
+
+          <div id="form-refurb-list" class="space-y-2 mb-3"></div>
+
+          <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800 text-slate-400">
+            <span>Total Refurbishment Cost:</span>
+            <span id="form-refurb-total" class="font-bold text-purple-300 font-mono-numbers">₹0</span>
+          </div>
+        </div>
+
+        <!-- SECTION 4: SALE (SELLING) INFORMATION -->
+        <div>
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <div class="flex items-center gap-2 text-blue-400 font-bold uppercase tracking-wider text-[11px]">
+              <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+              <span>4. Selling Information & Status</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <label class="text-xs font-semibold text-slate-300">Status:</label>
+              <select id="form-status" class="bg-surface-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-100 focus:outline-none focus:border-brand-500">
+                <option value="In Stock">In Stock</option>
+                <option value="Sold">Sold</option>
+                <option value="Reserved">Reserved</option>
+                <option value="Refurbishing">Refurbishing (In Workshop)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="sale-fields-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Selling Price / Expected Price (<span class="currency-label">₹</span>) *</label>
+              <input type="number" id="form-selling-price" min="0" step="500" placeholder="e.g. 175000" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-blue-400 font-bold text-sm focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Sale Date</label>
+              <input type="date" id="form-sale-date" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Buyer Full Name</label>
+              <input type="text" id="form-buyer-name" placeholder="Full Name of Customer" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Buyer Contact Phone</label>
+              <input type="tel" id="form-buyer-phone" placeholder="e.g. +91 98765 43210" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 bg-slate-900/80 rounded-xl border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400">Projected / Realized Profit:</span>
+            <div class="flex items-center gap-2">
+              <span id="form-calc-profit" class="font-bold text-sm font-mono-numbers text-emerald-400">₹0</span>
+              <span id="form-calc-margin" class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">(0%)</span>
+            </div>
+          </div>
+        </div>
+
+      </form>
+
+      <div class="px-6 py-4 border-t border-slate-800 bg-surface-800/70 flex items-center justify-between">
+        <button type="button" id="cancel-bike-modal-btn" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+          Cancel
+        </button>
+        <button type="button" id="save-bike-record-btn" class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 transition-all">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Save Bike Record</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. QUICK "MARK AS SOLD" MODAL -->
+  <div id="quick-sale-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-hidden modal-overlay bg-black/75 backdrop-blur-sm">
+    <div class="modal-content bg-surface-850 border border-slate-700/80 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+      
+      <div class="px-6 py-4 border-b border-slate-800 bg-surface-800/70 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center">
+            <i data-lucide="badge-dollar-sign" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Record Sale & Generate Bill</h3>
+            <p id="qs-bike-title" class="text-xs text-slate-400">Royal Enfield Classic 350</p>
+          </div>
+        </div>
+        <button id="close-qs-modal-btn" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="quick-sale-form" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="qs-bike-id" value="">
+
+        <div class="p-3 bg-surface-900 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="flex justify-between text-slate-400">
+            <span>Original Purchase Cost:</span>
+            <span id="qs-cost-purchase" class="font-mono-numbers text-slate-200">₹0</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Workshop / Refurbishment:</span>
+            <span id="qs-cost-refurb" class="font-mono-numbers text-purple-300">₹0</span>
+          </div>
+          <div class="flex justify-between text-slate-200 font-bold pt-1 border-t border-slate-800">
+            <span>Total Cost Basis:</span>
+            <span id="qs-cost-total" class="font-mono-numbers text-amber-400">₹0</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Customer / Buyer Full Name *</label>
+          <input type="text" id="qs-buyer-name" required placeholder="e.g. Ramesh Sharma" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Buyer Contact *</label>
+            <input type="tel" id="qs-buyer-phone" required placeholder="e.g. +91 98765 43210" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Sale Date *</label>
+            <input type="date" id="qs-sale-date" required class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Agreed Selling Price (<span class="currency-label">₹</span>) *</label>
+          <input type="number" id="qs-selling-price" required min="0" step="500" placeholder="e.g. 175000" class="w-full font-mono-numbers font-bold text-blue-400 bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 text-sm">
+        </div>
+
+        <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between">
+          <div>
+            <span class="text-xs text-slate-400 block">Calculated Net Profit</span>
+            <span id="qs-calc-profit" class="text-lg font-extrabold text-emerald-400 font-mono-numbers">+₹0</span>
+          </div>
+          <span id="qs-calc-margin" class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">+0% Margin</span>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-3">
+          <button type="button" id="cancel-qs-modal-btn" class="px-4 py-2 text-slate-400 hover:text-white transition-colors">
+            Cancel
+          </button>
+          <button type="submit" class="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-500/25 transition-all">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            Confirm Sale & Mark Sold
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- 3. REFURBISHMENT QUICK EXPENSES MODAL -->
+  <div id="refurb-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-hidden modal-overlay bg-black/75 backdrop-blur-sm">
+    <div class="modal-content bg-surface-850 border border-slate-700/80 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+      
+      <div class="px-6 py-4 border-b border-slate-800 bg-surface-800/70 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center">
+            <i data-lucide="wrench" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Refurbishment & Repairs</h3>
+            <p id="refurb-modal-bike-title" class="text-xs text-slate-400">Manage workshop expenses</p>
+          </div>
+        </div>
+        <button id="close-refurb-modal-btn" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="refurb-modal-bike-id" value="">
+
+        <div class="p-3 bg-surface-900 rounded-xl border border-slate-800 space-y-3">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">Add Workshop Expense</span>
+          <div class="space-y-2">
+            <input type="text" id="new-refurb-desc" placeholder="e.g. Rear Disc Pad & Motul Engine Oil" class="w-full bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
+            <div class="grid grid-cols-2 gap-2">
+              <input type="number" id="new-refurb-cost" placeholder="Cost (₹)" min="0" class="w-full font-mono-numbers bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
+              <input type="date" id="new-refurb-date" class="w-full bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
+            </div>
+            <button type="button" id="add-refurb-item-btn" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Add Expense
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-xs font-semibold text-slate-400 block mb-2">Itemized Workshop Log</span>
+          <div id="refurb-modal-items" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+          <div class="flex justify-between items-center pt-3 border-t border-slate-800 mt-2 font-bold">
+            <span class="text-slate-300">Total Workshop Investment:</span>
+            <span id="refurb-modal-grand-total" class="text-purple-300 font-mono-numbers text-sm">₹0</span>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button type="button" id="done-refurb-modal-btn" class="px-5 py-2 rounded-xl bg-surface-750 hover:bg-slate-700 text-white font-semibold transition-colors">
+            Done
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 5. CHANGE ADMIN PASSWORD MODAL -->
+  <div id="change-pwd-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-hidden modal-overlay bg-black/75 backdrop-blur-sm">
+    <div class="modal-content bg-surface-850 border border-slate-700/80 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+      
+      <div class="px-6 py-4 border-b border-slate-800 bg-surface-800/70 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+            <i data-lucide="key" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Admin Security Settings</h3>
+            <p class="text-xs text-slate-400">Update standard login password</p>
+          </div>
+        </div>
+        <button id="close-change-pwd-modal-btn" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="change-pwd-form" class="p-6 space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Current Password *</label>
+          <input type="password" id="pwd-current" required placeholder="Current password" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">New Password *</label>
+          <input type="password" id="pwd-new" required placeholder="At least 6 characters" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Confirm New Password *</label>
+          <input type="password" id="pwd-confirm" required placeholder="Repeat new password" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div id="change-pwd-msg" class="hidden p-2.5 rounded-lg text-xs font-semibold"></div>
+
+        <div class="pt-2 flex items-center justify-end gap-3">
+          <button type="button" id="cancel-change-pwd-btn" class="px-4 py-2 text-slate-400 hover:text-white transition-colors">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all shadow-lg shadow-amber-500/25">
+            Update Password
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- 6. OFFICIAL BILL OF SALE / INVOICE MODAL (PRINT READY) -->
+  <div id="invoice-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-hidden modal-overlay bg-black/85 backdrop-blur-md">
+    <div class="modal-content bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      
+      <div class="px-6 py-4 border-b border-slate-800 bg-surface-800/90 flex items-center justify-between no-print">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-brand-500/15 text-brand-400 flex items-center justify-center">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Vehicle Delivery Challan & Bill of Sale</h3>
+            <p class="text-xs text-slate-400">Official receipt, legal ownership transfer, and buyer invoice</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="print-invoice-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white shadow-lg transition-all">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Print / Save as PDF</span>
+          </button>
+          <button id="close-invoice-modal-btn" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-y-auto p-6 bg-slate-950 flex-1">
+        <div id="printable-invoice-container" class="max-w-3xl mx-auto bg-white text-slate-900 p-8 sm:p-10 rounded-xl shadow-lg border border-slate-200">
+          <!-- Dynamically populated invoice layout -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- External Scripts -->
+  <script src="bikes-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

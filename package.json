@@ -1,0 +1,13 @@
+{
+  "name": "fastxmoto",
+  "version": "1.0.0",
+  "description": "FastXMoto - Used Bikes Buying & Selling Records Management",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "deploy": "vercel"
+  },
+  "keywords": ["motorcycle", "used-bikes", "dealership", "records-manager"],
+  "author": "",
+  "license": "MIT"
+}
