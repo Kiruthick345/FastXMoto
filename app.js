@@ -618,6 +618,23 @@ function setupWorkshopEventListeners() {
   regInput?.addEventListener('input', checkRegInput);
   regInput?.addEventListener('change', checkRegInput);
 
+  // Dropdown with "Others" on Workshop Quick Repair Description
+  const wsDescSelect = document.getElementById('ws-select-repair-desc');
+  const wsDescInput = document.getElementById('ws-input-repair-desc');
+
+  wsDescSelect?.addEventListener('change', (e) => {
+    if (e.target.value === 'Others') {
+      wsDescInput?.classList.remove('hidden');
+      wsDescInput.value = '';
+      wsDescInput.required = true;
+      wsDescInput.focus();
+    } else {
+      wsDescInput?.classList.add('hidden');
+      wsDescInput.value = e.target.value;
+      wsDescInput.required = false;
+    }
+  });
+
   // Direct Quick-Add Repair Form Submission
   const directForm = document.getElementById('ws-direct-repair-form');
   if (directForm) {
@@ -649,17 +666,24 @@ function setupWorkshopEventListeners() {
 function handleDirectRepairSubmit(e) {
   e.preventDefault();
   const regInput = document.getElementById('ws-input-reg-no');
+  const wsDescSelect = document.getElementById('ws-select-repair-desc');
   const descInput = document.getElementById('ws-input-repair-desc');
   const costInput = document.getElementById('ws-input-repair-cost');
   const alertEl = document.getElementById('ws-repair-success-alert');
   const msgEl = document.getElementById('ws-repair-success-msg');
 
   const rawReg = regInput?.value.trim().toUpperCase() || '';
-  const desc = descInput?.value.trim() || '';
+  
+  let desc = '';
+  if (wsDescSelect?.value === 'Others') {
+    desc = descInput?.value.trim() || '';
+  } else {
+    desc = wsDescSelect?.value || descInput?.value.trim() || '';
+  }
   const cost = parseFloat(costInput?.value);
 
   if (!rawReg || !desc || isNaN(cost) || cost < 0) {
-    alert('Please enter a valid Registration Number, repair description, and non-negative cost amount.');
+    alert('Please enter a valid Registration Number, select or type a repair description, and enter a valid cost amount.');
     return;
   }
 
@@ -708,7 +732,12 @@ function handleDirectRepairSubmit(e) {
 
   // Reset fields for next entry
   if (regInput) regInput.value = '';
-  if (descInput) descInput.value = '';
+  if (wsDescSelect) wsDescSelect.value = '';
+  if (descInput) {
+    descInput.value = '';
+    descInput.classList.add('hidden');
+    descInput.required = false;
+  }
   if (costInput) costInput.value = '';
   document.getElementById('ws-detected-bike-badge')?.classList.add('hidden');
   regInput?.focus();
@@ -1569,9 +1598,14 @@ function openBikeModal(bikeId = null) {
   }
 
   // Clear inline refurbishment fields
+  const modalDescSelect = document.getElementById('form-refurb-desc-select');
   const inlineDesc = document.getElementById('form-refurb-desc-inline');
   const inlineCost = document.getElementById('form-refurb-cost-inline');
-  if (inlineDesc) inlineDesc.value = '';
+  if (modalDescSelect) modalDescSelect.value = '';
+  if (inlineDesc) {
+    inlineDesc.value = '';
+    inlineDesc.classList.add('hidden');
+  }
   if (inlineCost) inlineCost.value = '';
 
   renderFormRefurbishments();
@@ -1684,17 +1718,40 @@ function removeFormRefurbItem(index) {
   updateFormCalculatedProfit();
 }
 
+// Dropdown with "Others" on Modal Section 3 Repair Description
+const modalDescSelect = document.getElementById('form-refurb-desc-select');
+const modalDescInput = document.getElementById('form-refurb-desc-inline');
+
+modalDescSelect?.addEventListener('change', (e) => {
+  if (e.target.value === 'Others') {
+    modalDescInput?.classList.remove('hidden');
+    modalDescInput.value = '';
+    modalDescInput.focus();
+  } else {
+    modalDescInput?.classList.add('hidden');
+    modalDescInput.value = e.target.value;
+  }
+});
+
 // Inline Add Repair button in Bike Modal
 document.getElementById('form-add-refurb-inline-btn')?.addEventListener('click', () => {
-  const descInput = document.getElementById('form-refurb-desc-inline');
   const costInput = document.getElementById('form-refurb-cost-inline');
 
-  const desc = descInput?.value.trim();
+  let desc = '';
+  if (modalDescSelect?.value === 'Others') {
+    desc = modalDescInput?.value.trim() || '';
+  } else {
+    desc = modalDescSelect?.value || modalDescInput?.value.trim() || '';
+  }
   const cost = parseFloat(costInput?.value);
 
   if (!desc) {
-    alert('Please enter a description for the repair/refurbishment expense.');
-    descInput?.focus();
+    alert('Please select or enter a description for the repair/refurbishment expense.');
+    if (modalDescSelect?.value === 'Others') {
+      modalDescInput?.focus();
+    } else {
+      modalDescSelect?.focus();
+    }
     return;
   }
   if (isNaN(cost) || cost < 0) {
@@ -1710,7 +1767,11 @@ document.getElementById('form-add-refurb-inline-btn')?.addEventListener('click',
     date: new Date().toISOString().split('T')[0]
   });
 
-  if (descInput) descInput.value = '';
+  if (modalDescSelect) modalDescSelect.value = '';
+  if (modalDescInput) {
+    modalDescInput.value = '';
+    modalDescInput.classList.add('hidden');
+  }
   if (costInput) costInput.value = '';
 
   renderFormRefurbishments();
@@ -1778,8 +1839,15 @@ function handleSaveBikeRecord() {
   }
 
   // Include any pending inline refurbishment input before saving
-  const inlineDesc = document.getElementById('form-refurb-desc-inline')?.value.trim();
+  const pendingSelect = document.getElementById('form-refurb-desc-select');
+  const pendingInput = document.getElementById('form-refurb-desc-inline');
   const inlineCost = parseFloat(document.getElementById('form-refurb-cost-inline')?.value);
+  let inlineDesc = '';
+  if (pendingSelect?.value === 'Others') {
+    inlineDesc = pendingInput?.value.trim() || '';
+  } else {
+    inlineDesc = pendingSelect?.value || pendingInput?.value.trim() || '';
+  }
   if (inlineDesc && !isNaN(inlineCost) && inlineCost > 0) {
     formRefurbishments.push({
       id: 'ref-' + Date.now(),

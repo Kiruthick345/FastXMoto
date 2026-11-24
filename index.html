@@ -759,18 +759,39 @@
             </div>
           </div>
 
-          <!-- Repair Work Description -->
+          <!-- Repair Work Description with Dropdown & Others -->
           <div class="md:col-span-5">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">
               Repair / Work Description *
             </label>
-            <input 
-              type="text" 
-              id="ws-input-repair-desc" 
-              required 
-              placeholder="e.g. Front Fork Oil & Seals, New Rear Tyre, Engine Service" 
-              class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
-            >
+            <div class="space-y-1.5">
+              <select 
+                id="ws-select-repair-desc" 
+                required 
+                class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 cursor-pointer"
+              >
+                <option value="" disabled selected>-- Select Repair / Work Description --</option>
+                <option value="General Service & Tuning">General Service & Tuning</option>
+                <option value="Engine Oil & Filter Service">Engine Oil & Filter Service</option>
+                <option value="Brake Pad / Disc Service">Brake Pad / Disc Service</option>
+                <option value="Chain Sprocket Kit & Lube">Chain Sprocket Kit & Lube</option>
+                <option value="Front Fork Oil & Seals">Front Fork Oil & Seals</option>
+                <option value="New Tyres (Front / Rear)">New Tyres (Front / Rear)</option>
+                <option value="Battery Replacement">Battery Replacement</option>
+                <option value="Clutch Plate & Cable">Clutch Plate & Cable</option>
+                <option value="Carburetor / Fuel Injector Clean">Carburetor / Fuel Injector Clean</option>
+                <option value="Electrical & Wiring Repair">Electrical & Wiring Repair</option>
+                <option value="Detailing, Polish & Teflon">Detailing, Polish & Teflon</option>
+                <option value="Body Work & Dent Repair">Body Work & Dent Repair</option>
+                <option value="Others">Others</option>
+              </select>
+              <input 
+                type="text" 
+                id="ws-input-repair-desc" 
+                placeholder="Type custom repair description..." 
+                class="hidden w-full bg-surface-900 border border-purple-500/70 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              >
+            </div>
           </div>
 
           <!-- Repair Cost & Submit -->
@@ -1003,10 +1024,26 @@
             </div>
           </div>
 
-          <!-- Direct Input Row for Repair Cost & Description -->
+          <!-- Direct Input Row for Repair Cost & Description with Dropdown -->
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3">
-            <div class="sm:col-span-6">
-              <input type="text" id="form-refurb-desc-inline" placeholder="Repair work (e.g. Service, Oil, Tyres)" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500">
+            <div class="sm:col-span-6 space-y-1.5">
+              <select id="form-refurb-desc-select" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-purple-500 cursor-pointer">
+                <option value="" disabled selected>-- Select Repair Work --</option>
+                <option value="General Service & Tuning">General Service & Tuning</option>
+                <option value="Engine Oil & Filter Service">Engine Oil & Filter Service</option>
+                <option value="Brake Pad / Disc Service">Brake Pad / Disc Service</option>
+                <option value="Chain Sprocket Kit & Lube">Chain Sprocket Kit & Lube</option>
+                <option value="Front Fork Oil & Seals">Front Fork Oil & Seals</option>
+                <option value="New Tyres (Front / Rear)">New Tyres (Front / Rear)</option>
+                <option value="Battery Replacement">Battery Replacement</option>
+                <option value="Clutch Plate & Cable">Clutch Plate & Cable</option>
+                <option value="Carburetor / Fuel Injector Clean">Carburetor / Fuel Injector Clean</option>
+                <option value="Electrical & Wiring Repair">Electrical & Wiring Repair</option>
+                <option value="Detailing, Polish & Teflon">Detailing, Polish & Teflon</option>
+                <option value="Body Work & Dent Repair">Body Work & Dent Repair</option>
+                <option value="Others">Others</option>
+              </select>
+              <input type="text" id="form-refurb-desc-inline" placeholder="Type custom repair description..." class="hidden w-full bg-surface-900 border border-purple-500/70 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500">
             </div>
             <div class="sm:col-span-4">
               <input type="number" id="form-refurb-cost-inline" placeholder="Repair Cost (₹)" min="0" step="any" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-purple-300 font-bold placeholder-slate-500 focus:outline-none focus:border-purple-500">
@@ -1194,7 +1231,23 @@
         <div class="p-3 bg-surface-900 rounded-xl border border-slate-800 space-y-3">
           <span class="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">Add Workshop Expense</span>
           <div class="space-y-2">
-            <input type="text" id="new-refurb-desc" placeholder="e.g. Rear Disc Pad & Motul Engine Oil" class="w-full bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
+            <select id="new-refurb-desc-select" class="w-full bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500 cursor-pointer">
+              <option value="" disabled selected>-- Select Repair Work --</option>
+              <option value="General Service & Tuning">General Service & Tuning</option>
+              <option value="Engine Oil & Filter Service">Engine Oil & Filter Service</option>
+              <option value="Brake Pad / Disc Service">Brake Pad / Disc Service</option>
+              <option value="Chain Sprocket Kit & Lube">Chain Sprocket Kit & Lube</option>
+              <option value="Front Fork Oil & Seals">Front Fork Oil & Seals</option>
+              <option value="New Tyres (Front / Rear)">New Tyres (Front / Rear)</option>
+              <option value="Battery Replacement">Battery Replacement</option>
+              <option value="Clutch Plate & Cable">Clutch Plate & Cable</option>
+              <option value="Carburetor / Fuel Injector Clean">Carburetor / Fuel Injector Clean</option>
+              <option value="Electrical & Wiring Repair">Electrical & Wiring Repair</option>
+              <option value="Detailing, Polish & Teflon">Detailing, Polish & Teflon</option>
+              <option value="Body Work & Dent Repair">Body Work & Dent Repair</option>
+              <option value="Others">Others</option>
+            </select>
+            <input type="text" id="new-refurb-desc" placeholder="Type custom repair description..." class="hidden w-full bg-surface-850 border border-purple-500/70 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
             <div class="grid grid-cols-2 gap-2">
               <input type="number" id="new-refurb-cost" placeholder="Cost (₹)" min="0" class="w-full font-mono-numbers bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
               <input type="date" id="new-refurb-date" class="w-full bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
