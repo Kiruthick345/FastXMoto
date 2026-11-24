@@ -808,6 +808,15 @@
           <span id="ws-repair-success-msg"></span>
           <button type="button" id="ws-success-view-inventory-btn" class="underline hover:text-white">View in Inventory →</button>
         </div>
+
+        <!-- Live error alert pill -->
+        <div id="ws-repair-error-alert" class="hidden mt-3 p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>
+            <span id="ws-repair-error-msg">Vehicle Not Found</span>
+          </div>
+          <button type="button" onclick="openBikeModal()" class="underline hover:text-white text-[11px]">+ Add Bike to Inventory</button>
+        </div>
       </div>
 
       <!-- REPAIR RECORDS TABLE -->

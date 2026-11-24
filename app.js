@@ -500,6 +500,19 @@ function getCostBasis(bike) {
 }
 
 /**
+ * Escape HTML special characters for safe markup insertion
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Normalize vehicle registration number for cross-module lookup (e.g. "MH 12 AB 4589" -> "MH12AB4589")
  */
 function normalizeReg(reg) {
@@ -590,11 +603,13 @@ function setupWorkshopEventListeners() {
     if (matchedBike) {
       if (detectedBadge && detectedText) {
         detectedText.textContent = `Found in Inventory: ${matchedBike.brand} ${matchedBike.model} (${matchedBike.year}) • ${matchedBike.status}`;
+        detectedBadge.className = 'mt-1.5 text-[11px] text-emerald-400 flex items-center gap-1 font-medium';
         detectedBadge.classList.remove('hidden');
       }
     } else {
       if (detectedBadge && detectedText) {
-        detectedText.textContent = `New vehicle • Will automatically link & register ${rawVal.toUpperCase()} in Inventory`;
+        detectedText.textContent = `Vehicle Not Found in Inventory (Add bike first)`;
+        detectedBadge.className = 'mt-1.5 text-[11px] text-rose-400 flex items-center gap-1 font-medium';
         detectedBadge.classList.remove('hidden');
       }
     }
@@ -651,35 +666,25 @@ function handleDirectRepairSubmit(e) {
   const cleanReg = normalizeReg(rawReg);
   let bike = bikes.find(b => normalizeReg(b.regNumber) === cleanReg);
 
-  // If vehicle is not yet in inventory, auto-create vehicle record with this Registration Number as key
+  // If vehicle is not in inventory, show error message "Vehicle Not Found"
   if (!bike) {
-    bike = {
-      id: 'BIKE-' + Date.now(),
-      brand: 'Motorcycle',
-      model: rawReg,
-      variant: '',
-      regNumber: rawReg,
-      year: new Date().getFullYear(),
-      engineCC: null,
-      odometerKm: 0,
-      color: '',
-      condition: 'Good',
-      chassisNumber: '',
-      engineNumber: '',
-      image: '',
-      purchaseDate: new Date().toISOString().split('T')[0],
-      purchasePrice: 0,
-      sellerName: 'Workshop Direct Entry',
-      sellerPhone: '',
-      sellerAddress: '',
-      sellerIdProof: '',
-      status: 'Refurbishing',
-      refurbishments: [],
-      documents: { rcBook: false, insurance: false, puc: false },
-      createdAt: new Date().toISOString()
-    };
-    bikes.unshift(bike);
+    const errorAlert = document.getElementById('ws-repair-error-alert');
+    const errorMsg = document.getElementById('ws-repair-error-msg');
+    const successAlert = document.getElementById('ws-repair-success-alert');
+    if (successAlert) successAlert.classList.add('hidden');
+
+    if (errorAlert && errorMsg) {
+      errorMsg.textContent = `Vehicle Not Found (Registration "${rawReg}" is not in inventory). Please add the bike first.`;
+      errorAlert.classList.remove('hidden');
+      setTimeout(() => errorAlert.classList.add('hidden'), 7000);
+    }
+    alert('Vehicle Not Found');
+    regInput?.focus();
+    return;
   }
+
+  // Clear any existing error alert
+  document.getElementById('ws-repair-error-alert')?.classList.add('hidden');
 
   // Add repair & update cost basis
   if (!bike.refurbishments) bike.refurbishments = [];
