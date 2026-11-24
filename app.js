@@ -45,8 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   setupAuthEventListeners();
   setupWorkshopEventListeners();
-  setupSellingEventListeners();
-  setupSummaryEventListeners();
 
   // Set initial view mode button state based on screen size
   if (currentViewMode === 'grid') {
@@ -60,9 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initCharts();
   renderApp();
-  renderSellingHub();
-  renderWorkshopHub();
-  renderSummaryHub();
   lucide.createIcons();
 });
 
@@ -338,144 +333,59 @@ function getBikeProfitMetrics(bike) {
 }
 
 // ============================================================================
-// 3. COMMON REGISTRATION NUMBER UTILITIES (ACROSS ALL MODULES)
-// ============================================================================
-
-function normalizeReg(reg) {
-  return (reg || '').toUpperCase().replace(/[\s\-_]+/g, '').trim();
-}
-
-function findBikeByReg(reg) {
-  if (!reg) return null;
-  const target = normalizeReg(reg);
-  return bikes.find(b => normalizeReg(b.regNumber) === target) || null;
-}
-
-function updateAllRegDatalists() {
-  const allBikes = bikes;
-
-  // 1. Refurbishment datalist
-  const wsDatalist = document.getElementById('ws-reg-datalist');
-  if (wsDatalist) {
-    wsDatalist.innerHTML = allBikes.map(b => `
-      <option value="${b.regNumber}">${b.brand} ${b.model} (${b.year}) • ${b.status}</option>
-    `).join('');
-  }
-
-  // 2. Selling datalist (prioritize in-stock / available bikes)
-  const sellingDatalist = document.getElementById('selling-reg-datalist');
-  if (sellingDatalist) {
-    sellingDatalist.innerHTML = allBikes.map(b => `
-      <option value="${b.regNumber}">${b.brand} ${b.model} (${b.year}) • ${b.status === 'Sold' ? 'ALREADY SOLD' : 'Available'}</option>
-    `).join('');
-  }
-
-  // 3. Total Summary datalist
-  const summaryDatalist = document.getElementById('summary-reg-datalist');
-  if (summaryDatalist) {
-    summaryDatalist.innerHTML = allBikes.map(b => `
-      <option value="${b.regNumber}">${b.brand} ${b.model} (${b.year}) • ${b.status}</option>
-    `).join('');
-  }
-}
-
-function getStatusClass(status) {
-  switch (status) {
-    case 'In Stock': return 'badge-instock';
-    case 'Sold': return 'badge-sold';
-    case 'Reserved': return 'badge-reserved';
-    case 'Refurbishing': return 'badge-refurbishing';
-    default: return 'bg-slate-800 text-slate-300 border border-slate-700';
-  }
-}
-
-// ============================================================================
-// 4. MODULE NAVIGATION (INVENTORY, SELLING, REFURBISHMENT, TOTAL SUMMARY)
+// 3. MODULE NAVIGATION & WORKSHOP HUB EVENTS
 // ============================================================================
 
 function switchModule(moduleName) {
   currentModule = moduleName;
   const inventoryModule = document.getElementById('module-inventory');
-  const sellingModule = document.getElementById('module-selling');
   const workshopModule = document.getElementById('module-workshop');
-  const summaryModule = document.getElementById('module-summary');
 
-  // Desktop nav tabs
   const navTabInv = document.getElementById('nav-tab-inventory');
-  const navTabSell = document.getElementById('nav-tab-selling');
   const navTabWs = document.getElementById('nav-tab-workshop');
-  const navTabSum = document.getElementById('nav-tab-summary');
-
-  // Mobile nav tabs
   const mobTabInv = document.getElementById('mobile-nav-tab-inventory');
-  const mobTabSell = document.getElementById('mobile-nav-tab-selling');
   const mobTabWs = document.getElementById('mobile-nav-tab-workshop');
-  const mobTabSum = document.getElementById('mobile-nav-tab-summary');
-
-  // Hide all modules first
-  inventoryModule?.classList.add('hidden');
-  sellingModule?.classList.add('hidden');
-  workshopModule?.classList.add('hidden');
-  summaryModule?.classList.add('hidden');
-
-  // Reset desktop nav styles
-  [navTabInv, navTabSell, navTabWs, navTabSum].forEach(btn => {
-    btn?.classList.remove('bg-brand-500', 'bg-blue-600', 'bg-purple-600', 'bg-emerald-600', 'text-white', 'shadow-md');
-    btn?.classList.add('text-slate-300');
-  });
-
-  // Reset mobile nav styles
-  [mobTabInv, mobTabSell, mobTabWs, mobTabSum].forEach(btn => {
-    btn?.classList.remove('bg-brand-500', 'bg-blue-600', 'bg-purple-600', 'bg-emerald-600', 'text-white', 'shadow-sm');
-    btn?.classList.add('bg-surface-800', 'text-slate-300');
-  });
 
   if (moduleName === 'inventory') {
     inventoryModule?.classList.remove('hidden');
+    workshopModule?.classList.add('hidden');
+
     navTabInv?.classList.add('bg-brand-500', 'text-white', 'shadow-md');
     navTabInv?.classList.remove('text-slate-300');
+    navTabWs?.classList.remove('bg-purple-600', 'text-white', 'shadow-md');
+    navTabWs?.classList.add('text-slate-300');
+
     mobTabInv?.classList.add('bg-brand-500', 'text-white');
     mobTabInv?.classList.remove('bg-surface-800', 'text-slate-300');
+    mobTabWs?.classList.remove('bg-purple-600', 'text-white');
+    mobTabWs?.classList.add('bg-surface-800', 'text-slate-300');
+
     renderApp();
-  } else if (moduleName === 'selling') {
-    sellingModule?.classList.remove('hidden');
-    navTabSell?.classList.add('bg-blue-600', 'text-white', 'shadow-md');
-    navTabSell?.classList.remove('text-slate-300');
-    mobTabSell?.classList.add('bg-blue-600', 'text-white');
-    mobTabSell?.classList.remove('bg-surface-800', 'text-slate-300');
-    renderSellingHub();
-  } else if (moduleName === 'workshop' || moduleName === 'refurbish') {
+  } else {
     workshopModule?.classList.remove('hidden');
+    inventoryModule?.classList.add('hidden');
+
     navTabWs?.classList.add('bg-purple-600', 'text-white', 'shadow-md');
     navTabWs?.classList.remove('text-slate-300');
+    navTabInv?.classList.remove('bg-brand-500', 'text-white', 'shadow-md');
+    navTabInv?.classList.add('text-slate-300');
+
     mobTabWs?.classList.add('bg-purple-600', 'text-white');
     mobTabWs?.classList.remove('bg-surface-800', 'text-slate-300');
-    renderWorkshopHub();
-  } else if (moduleName === 'summary') {
-    summaryModule?.classList.remove('hidden');
-    navTabSum?.classList.add('bg-emerald-600', 'text-white', 'shadow-md');
-    navTabSum?.classList.remove('text-slate-300');
-    mobTabSum?.classList.add('bg-emerald-600', 'text-white');
-    mobTabSum?.classList.remove('bg-surface-800', 'text-slate-300');
-    renderSummaryHub();
-  }
+    mobTabInv?.classList.remove('bg-brand-500', 'text-white');
+    mobTabInv?.classList.add('bg-surface-800', 'text-slate-300');
 
-  updateAllRegDatalists();
+    renderWorkshopHub();
+  }
   lucide.createIcons();
 }
 
 function setupWorkshopEventListeners() {
-  // Navigation tabs desktop
+  // Navigation tabs
   document.getElementById('nav-tab-inventory')?.addEventListener('click', () => switchModule('inventory'));
-  document.getElementById('nav-tab-selling')?.addEventListener('click', () => switchModule('selling'));
   document.getElementById('nav-tab-workshop')?.addEventListener('click', () => switchModule('workshop'));
-  document.getElementById('nav-tab-summary')?.addEventListener('click', () => switchModule('summary'));
-
-  // Navigation tabs mobile
   document.getElementById('mobile-nav-tab-inventory')?.addEventListener('click', () => switchModule('inventory'));
-  document.getElementById('mobile-nav-tab-selling')?.addEventListener('click', () => switchModule('selling'));
   document.getElementById('mobile-nav-tab-workshop')?.addEventListener('click', () => switchModule('workshop'));
-  document.getElementById('mobile-nav-tab-summary')?.addEventListener('click', () => switchModule('summary'));
 
   // Live detection of vehicle as user types or selects Registration Number
   const regInput = document.getElementById('ws-input-reg-no');
@@ -484,15 +394,17 @@ function setupWorkshopEventListeners() {
 
   const checkRegInput = () => {
     const rawVal = regInput?.value.trim() || '';
-    if (!rawVal) {
+    const cleanVal = rawVal.toUpperCase().replace(/\s+/g, '');
+
+    if (!cleanVal) {
       detectedBadge?.classList.add('hidden');
       return;
     }
 
-    const matchedBike = findBikeByReg(rawVal);
+    const matchedBike = bikes.find(b => (b.regNumber || '').toUpperCase().replace(/\s+/g, '') === cleanVal);
     if (matchedBike) {
       if (detectedBadge && detectedText) {
-        detectedText.textContent = `Found: ${matchedBike.brand} ${matchedBike.model} (${matchedBike.year}) • Status: ${matchedBike.status}`;
+        detectedText.textContent = `Found in Inventory: ${matchedBike.brand} ${matchedBike.model} (${matchedBike.year}) • ${matchedBike.status}`;
         detectedBadge.classList.remove('hidden');
       }
     } else {
@@ -564,8 +476,6 @@ function handleDirectRepairSubmit(e) {
     saveData();
     renderWorkshopHub();
     renderApp();
-    renderSellingHub();
-    renderSummaryHub();
 
     // Show success confirmation
     if (alertEl && msgEl) {
@@ -711,13 +621,7 @@ function renderWorkshopHub() {
 
         <!-- Actions -->
         <td class="py-3 px-4 text-right">
-          <div class="flex items-center justify-end gap-1.5">
-            <!-- 360 Summary Action Button -->
-            <button onclick="jumpToSummaryForBike('${bike.regNumber}')" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold transition-colors flex items-center gap-1" title="Consolidated Total Summary">
-              <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i>
-              <span>Summary</span>
-            </button>
-
+          <div class="flex items-center justify-end gap-2">
             <!-- Add More Repair (prefills reg no) -->
             <button onclick="prefillWorkshopReg('${bike.regNumber}')" class="px-2.5 py-1 rounded-lg bg-surface-750 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold transition-colors flex items-center gap-1" title="Add another repair for this vehicle">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -763,8 +667,6 @@ function removeWorkshopRepair(bikeId, repairIndex) {
     saveData();
     renderWorkshopHub();
     renderApp();
-    renderSellingHub();
-    renderSummaryHub();
   }
 }
 
@@ -796,779 +698,6 @@ function openWorkshopJobModal(bikeId) {
   } else {
     switchModule('workshop');
   }
-}
-
-// ============================================================================
-// 4A. SELLING INFORMATION MODULE ENGINE
-// ============================================================================
-
-let currentSellingFilter = 'ALL'; // 'ALL', 'SOLD', 'INSTOCK'
-let currentSellingSearch = '';
-
-function setupSellingEventListeners() {
-  const regInput = document.getElementById('selling-input-reg-no');
-  const priceInput = document.getElementById('selling-input-price');
-  const sellingForm = document.getElementById('selling-direct-form');
-  const searchInput = document.getElementById('selling-search-input');
-
-  // Live detection of vehicle as user types or selects Registration Number in Selling module
-  const checkSellingReg = () => {
-    const rawVal = regInput?.value.trim() || '';
-    const bike = findBikeByReg(rawVal);
-
-    const nameEl = document.getElementById('selling-detected-bike-name');
-    const buyEl = document.getElementById('selling-detected-purchase');
-    const refurbEl = document.getElementById('selling-detected-refurb');
-    const costBasisEl = document.getElementById('selling-detected-costbasis');
-
-    if (bike) {
-      const refurbTotal = (bike.refurbishments || []).reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
-      const costBasis = getCostBasis(bike);
-
-      if (nameEl) nameEl.textContent = `${bike.brand} ${bike.model} (${bike.year}) • ${bike.status}`;
-      if (buyEl) buyEl.textContent = formatCurrency(bike.purchasePrice);
-      if (refurbEl) refurbEl.textContent = formatCurrency(refurbTotal);
-      if (costBasisEl) costBasisEl.textContent = formatCurrency(costBasis);
-
-      // Pre-fill target selling price if empty
-      if (priceInput && (!priceInput.value || Number(priceInput.value) <= 0)) {
-        priceInput.value = bike.sellingPrice || Math.round(costBasis * 1.2 / 500) * 500;
-      }
-      // Pre-fill existing buyer details if already present
-      const bnInput = document.getElementById('selling-input-buyer-name');
-      const bpInput = document.getElementById('selling-input-buyer-phone');
-      const sdInput = document.getElementById('selling-input-sale-date');
-
-      if (bike.buyerName && bnInput && !bnInput.value) bnInput.value = bike.buyerName;
-      if (bike.buyerPhone && bpInput && !bpInput.value) bpInput.value = bike.buyerPhone;
-      if (bike.saleDate && sdInput && !sdInput.value) sdInput.value = bike.saleDate;
-
-      updateSellingLiveProfit();
-    } else {
-      if (nameEl) nameEl.textContent = rawVal ? 'Unknown vehicle (Will link by Reg No)' : 'Select Registration No. above';
-      if (buyEl) buyEl.textContent = '₹0';
-      if (refurbEl) refurbEl.textContent = '₹0';
-      if (costBasisEl) costBasisEl.textContent = '₹0';
-      updateSellingLiveProfit();
-    }
-  };
-
-  regInput?.addEventListener('input', checkSellingReg);
-  regInput?.addEventListener('change', checkSellingReg);
-  priceInput?.addEventListener('input', updateSellingLiveProfit);
-
-  // Set default sale date to today if empty
-  const saleDateInput = document.getElementById('selling-input-sale-date');
-  if (saleDateInput && !saleDateInput.value) {
-    saleDateInput.value = new Date().toISOString().split('T')[0];
-  }
-
-  // Handle direct sell form submission
-  sellingForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const regNo = regInput?.value.trim().toUpperCase();
-    const buyerName = document.getElementById('selling-input-buyer-name')?.value.trim();
-    const buyerPhone = document.getElementById('selling-input-buyer-phone')?.value.trim();
-    const saleDate = document.getElementById('selling-input-sale-date')?.value;
-    const sellPrice = parseFloat(priceInput?.value) || 0;
-
-    if (!regNo || !buyerName || !buyerPhone || !saleDate || sellPrice <= 0) {
-      alert('Please fill all required selling fields: Registration No., Buyer Name, Buyer Phone, Sale Date, and Agreed Selling Price.');
-      return;
-    }
-
-    let bike = findBikeByReg(regNo);
-    if (!bike) {
-      const shouldCreate = confirm(`Vehicle with registration "${regNo}" was not found in Inventory.\n\nWould you like to automatically record this vehicle in dealership records?`);
-      if (!shouldCreate) return;
-
-      bike = {
-        id: `BIKE-${new Date().getFullYear()}-${String(bikes.length + 1).padStart(3, '0')}`,
-        brand: 'Motorcycle',
-        model: regNo,
-        variant: 'Standard',
-        regNumber: regNo,
-        year: new Date().getFullYear(),
-        purchaseDate: saleDate,
-        purchasePrice: Math.round(sellPrice * 0.8),
-        sellerName: 'Previous Owner',
-        sellerPhone: '',
-        refurbishments: [],
-        status: 'Sold',
-        sellingPrice: sellPrice,
-        saleDate: saleDate,
-        buyerName: buyerName,
-        buyerPhone: buyerPhone
-      };
-      bikes.unshift(bike);
-    } else {
-      bike.status = 'Sold';
-      bike.sellingPrice = sellPrice;
-      bike.saleDate = saleDate;
-      bike.buyerName = buyerName;
-      bike.buyerPhone = buyerPhone;
-    }
-
-    saveData();
-    renderApp();
-    renderSellingHub();
-    renderWorkshopHub();
-    renderSummaryHub();
-
-    // Show success alert
-    const successAlert = document.getElementById('selling-success-alert');
-    const successMsg = document.getElementById('selling-success-msg');
-    if (successAlert && successMsg) {
-      successMsg.textContent = `✓ Sale completed and recorded for ${bike.brand} ${bike.model} (${bike.regNumber}) to ${buyerName}!`;
-      successAlert.classList.remove('hidden');
-    }
-
-    triggerCelebrationConfetti();
-  });
-
-  // Filter tabs in Selling hub
-  const filterTabs = document.querySelectorAll('#selling-filter-tabs button');
-  filterTabs.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterTabs.forEach(b => {
-        b.classList.remove('active', 'bg-blue-600', 'text-white');
-        b.classList.add('text-slate-400');
-      });
-      btn.classList.add('active', 'bg-blue-600', 'text-white');
-      btn.classList.remove('text-slate-400');
-      currentSellingFilter = btn.dataset.sellingTab || 'ALL';
-      renderSellingHub();
-    });
-  });
-
-  // Search input in Selling hub
-  searchInput?.addEventListener('input', (e) => {
-    currentSellingSearch = e.target.value.toLowerCase().trim();
-    renderSellingHub();
-  });
-
-  // View in Total Summary button from success alert
-  document.getElementById('selling-view-summary-btn')?.addEventListener('click', () => {
-    const regNo = regInput?.value.trim();
-    if (regNo) jumpToSummaryForBike(regNo);
-    else switchModule('summary');
-  });
-}
-
-function updateSellingLiveProfit() {
-  const regInput = document.getElementById('selling-input-reg-no');
-  const priceInput = document.getElementById('selling-input-price');
-  const profitEl = document.getElementById('selling-live-profit');
-  if (!profitEl) return;
-
-  const rawVal = regInput?.value.trim() || '';
-  const bike = findBikeByReg(rawVal);
-  const costBasis = bike ? getCostBasis(bike) : 0;
-  const sellPrice = parseFloat(priceInput?.value) || 0;
-
-  if (sellPrice <= 0 || costBasis <= 0) {
-    profitEl.textContent = '₹0';
-    profitEl.className = 'text-xs sm:text-sm font-extrabold text-slate-400 font-mono-numbers';
-    return;
-  }
-
-  const profit = sellPrice - costBasis;
-  const margin = (profit / costBasis) * 100;
-  const isPositive = profit >= 0;
-
-  profitEl.textContent = `${isPositive ? '+' : ''}${formatCurrency(profit)} (${margin.toFixed(1)}%)`;
-  profitEl.className = `text-xs sm:text-sm font-extrabold font-mono-numbers ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`;
-}
-
-function renderSellingHub() {
-  // Compute selling metrics
-  const soldBikes = bikes.filter(b => b.status === 'Sold');
-  const totalRevenue = soldBikes.reduce((sum, b) => sum + (Number(b.sellingPrice) || 0), 0);
-  let totalProfit = 0;
-  soldBikes.forEach(b => {
-    totalProfit += (Number(b.sellingPrice) || 0) - getCostBasis(b);
-  });
-
-  const revEl = document.getElementById('selling-kpi-total-revenue');
-  const countEl = document.getElementById('selling-kpi-sold-count');
-  const profitEl = document.getElementById('selling-kpi-total-profit');
-  const badgeEl = document.getElementById('nav-selling-badge');
-  const mobBadgeEl = document.getElementById('mobile-nav-selling-badge');
-
-  if (revEl) revEl.textContent = formatCurrency(totalRevenue);
-  if (countEl) countEl.textContent = `${soldBikes.length} units`;
-  if (profitEl) profitEl.textContent = (totalProfit >= 0 ? '+' : '') + formatCurrency(totalProfit);
-  if (badgeEl) badgeEl.textContent = soldBikes.length;
-  if (mobBadgeEl) mobBadgeEl.textContent = soldBikes.length;
-
-  // Filter bikes for Selling table
-  const filteredBikes = bikes.filter(bike => {
-    if (currentSellingFilter === 'SOLD' && bike.status !== 'Sold') return false;
-    if (currentSellingFilter === 'INSTOCK' && bike.status === 'Sold') return false;
-
-    if (currentSellingSearch) {
-      const q = currentSellingSearch;
-      const matchReg = (bike.regNumber || '').toLowerCase().replace(/\s+/g, '').includes(q.replace(/\s+/g, ''));
-      const matchModel = (bike.brand + ' ' + bike.model).toLowerCase().includes(q);
-      const matchBuyer = (bike.buyerName || '').toLowerCase().includes(q);
-      if (!matchReg && !matchModel && !matchBuyer) return false;
-    }
-    return true;
-  });
-
-  const countBadge = document.getElementById('selling-records-count-badge');
-  if (countBadge) countBadge.textContent = `${filteredBikes.length} ${filteredBikes.length === 1 ? 'record' : 'records'}`;
-
-  const tbody = document.getElementById('selling-table-body');
-  const emptyState = document.getElementById('selling-empty-state');
-  if (!tbody) return;
-
-  if (filteredBikes.length === 0) {
-    tbody.innerHTML = '';
-    emptyState?.classList.remove('hidden');
-    return;
-  }
-  emptyState?.classList.add('hidden');
-
-  tbody.innerHTML = filteredBikes.map(bike => {
-    const costBasis = getCostBasis(bike);
-    const metrics = getBikeProfitMetrics(bike);
-    const isSold = bike.status === 'Sold';
-    const refurbTotal = (bike.refurbishments || []).reduce((acc, r) => acc + (Number(r.cost) || 0), 0);
-
-    return `
-      <tr class="hover:bg-slate-800/40 transition-colors">
-        <!-- Registration No. -->
-        <td class="py-3 px-4">
-          <span class="inline-block px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono font-bold uppercase tracking-wider text-xs">
-            ${bike.regNumber}
-          </span>
-        </td>
-
-        <!-- Vehicle Details -->
-        <td class="py-3 px-3">
-          <div class="font-bold text-white text-xs">${bike.brand} ${bike.model}</div>
-          <div class="text-[11px] text-slate-400 font-mono">${bike.year} • ${bike.variant || 'Standard'} • ${getStatusBadge(bike.status)}</div>
-        </td>
-
-        <!-- Total Cost Basis -->
-        <td class="py-3 px-3">
-          <div class="text-xs font-mono font-bold text-amber-400">${formatCurrency(costBasis)}</div>
-          <div class="text-[10px] text-slate-400">Buy: ${formatCurrency(bike.purchasePrice)} | Refurb: ${formatCurrency(refurbTotal)}</div>
-        </td>
-
-        <!-- Selling Price -->
-        <td class="py-3 px-3">
-          <div class="text-xs font-mono font-bold text-blue-400">${formatCurrency(bike.sellingPrice)}</div>
-          <div class="text-[10px] text-slate-400">${isSold ? 'Final Sale Price' : 'Target Showroom Price'}</div>
-        </td>
-
-        <!-- Net Profit / Margin -->
-        <td class="py-3 px-3">
-          ${isSold ? `
-            <div class="flex flex-col">
-              <span class="font-mono font-bold text-xs ${metrics.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
-                ${metrics.profit >= 0 ? '+' : ''}${formatCurrency(metrics.profit)}
-              </span>
-              <span class="text-[10px] font-semibold ${metrics.margin >= 0 ? 'text-emerald-300' : 'text-rose-300'}">
-                ${metrics.margin >= 0 ? '+' : ''}${metrics.margin.toFixed(1)}% margin
-              </span>
-            </div>
-          ` : `
-            <span class="text-[11px] text-slate-400 font-mono">Est. ${metrics.profit >= 0 ? '+' : ''}${formatCurrency(metrics.profit)}</span>
-          `}
-        </td>
-
-        <!-- Buyer & Sale Date -->
-        <td class="py-3 px-3">
-          ${isSold ? `
-            <div class="text-xs font-semibold text-white">${bike.buyerName || 'Customer'}</div>
-            <div class="text-[10px] text-slate-400 font-mono">${bike.buyerPhone || '-'} • ${bike.saleDate || ''}</div>
-          ` : `
-            <span class="inline-block px-2 py-0.5 rounded text-[10px] bg-slate-800 text-amber-300 border border-slate-700">In Showroom</span>
-          `}
-        </td>
-
-        <!-- Actions -->
-        <td class="py-3 px-4 text-right">
-          <div class="flex items-center justify-end gap-1.5">
-            ${isSold ? `
-              <button onclick="generateBillOfSale('${bike.id}')" class="px-2 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 text-[11px] font-semibold transition-colors flex items-center gap-1" title="View & Print Official Bill of Sale">
-                <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                <span>Bill</span>
-              </button>
-            ` : `
-              <button onclick="prefillSellingReg('${bike.regNumber}')" class="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition-colors flex items-center gap-1" title="Record sale for this bike">
-                <i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5"></i>
-                <span>Sell</span>
-              </button>
-            `}
-
-            <!-- 360 Summary Action Button -->
-            <button onclick="jumpToSummaryForBike('${bike.regNumber}')" class="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold transition-colors flex items-center gap-1" title="Consolidated Total Summary">
-              <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i>
-              <span>Summary</span>
-            </button>
-
-            ${isSold ? `
-              <button onclick="revertBikeSale('${bike.id}')" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 flex items-center justify-center transition-colors" title="Cancel/Revert sale back to In Stock">
-                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-              </button>
-            ` : ''}
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-
-  lucide.createIcons();
-}
-
-function prefillSellingReg(regNumber) {
-  const regInput = document.getElementById('selling-input-reg-no');
-  if (regInput) {
-    regInput.value = regNumber;
-    regInput.dispatchEvent(new Event('input'));
-    regInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}
-
-function revertBikeSale(bikeId) {
-  const bike = bikes.find(b => b.id === bikeId);
-  if (!bike) return;
-
-  if (confirm(`Do you want to cancel the sale for ${bike.brand} ${bike.model} (${bike.regNumber}) and return it to In Stock inventory?`)) {
-    bike.status = 'In Stock';
-    bike.buyerName = '';
-    bike.buyerPhone = '';
-    bike.saleDate = '';
-    saveData();
-    renderApp();
-    renderSellingHub();
-    renderWorkshopHub();
-    renderSummaryHub();
-  }
-}
-
-// ============================================================================
-// 4B. TOTAL SUMMARY MODULE ENGINE (VEHICLE 360° MASTER DOSSIER)
-// ============================================================================
-
-let currentSummaryReg = '';
-
-function setupSummaryEventListeners() {
-  const fetchForm = document.getElementById('summary-fetch-form');
-  const regInput = document.getElementById('summary-reg-input');
-
-  // Fetch form submit
-  fetchForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const reg = regInput?.value.trim();
-    if (reg) {
-      fetchVehicleSummary(reg);
-    }
-  });
-
-  // Live input/change auto-fetch when valid registration is typed or selected from datalist
-  regInput?.addEventListener('change', () => {
-    const reg = regInput.value.trim();
-    if (reg && findBikeByReg(reg)) {
-      fetchVehicleSummary(reg);
-    }
-  });
-
-  // Cross-module buttons in Dossier
-  document.getElementById('dossier-print-btn')?.addEventListener('click', () => {
-    if (currentSummaryReg) {
-      const bike = findBikeByReg(currentSummaryReg);
-      if (bike) openDossierPrintModal(bike);
-    }
-  });
-
-  document.getElementById('dossier-bill-btn')?.addEventListener('click', () => {
-    if (currentSummaryReg) {
-      const bike = findBikeByReg(currentSummaryReg);
-      if (bike && bike.status === 'Sold') generateBillOfSale(bike.id);
-    }
-  });
-
-  document.getElementById('dossier-action-refurb-btn')?.addEventListener('click', () => {
-    if (currentSummaryReg) jumpToWorkshopForBike(currentSummaryReg);
-  });
-
-  document.getElementById('dossier-add-repair-link')?.addEventListener('click', () => {
-    if (currentSummaryReg) jumpToWorkshopForBike(currentSummaryReg);
-  });
-
-  document.getElementById('dossier-action-sell-btn')?.addEventListener('click', () => {
-    if (currentSummaryReg) jumpToSellingForBike(currentSummaryReg);
-  });
-
-  document.getElementById('dossier-quick-sell-btn')?.addEventListener('click', () => {
-    if (currentSummaryReg) jumpToSellingForBike(currentSummaryReg);
-  });
-
-  document.getElementById('dossier-edit-sale-btn')?.addEventListener('click', () => {
-    if (currentSummaryReg) jumpToSellingForBike(currentSummaryReg);
-  });
-
-  document.getElementById('dossier-edit-inv-btn')?.addEventListener('click', () => {
-    if (currentSummaryReg) viewBikeInInventory(currentSummaryReg);
-  });
-
-  // Print modal buttons
-  document.getElementById('close-dossier-modal-btn')?.addEventListener('click', () => {
-    document.getElementById('dossier-print-modal')?.classList.add('modal-hidden');
-  });
-
-  document.getElementById('print-dossier-modal-btn')?.addEventListener('click', () => {
-    window.print();
-  });
-}
-
-function renderSummaryHub() {
-  updateAllRegDatalists();
-
-  // Render quick chips for all vehicles
-  const chipsContainer = document.getElementById('summary-quick-chips');
-  if (chipsContainer) {
-    if (bikes.length === 0) {
-      chipsContainer.innerHTML = '<span class="text-xs text-slate-500 italic">No vehicles in records yet.</span>';
-    } else {
-      chipsContainer.innerHTML = bikes.map(b => `
-        <button type="button" onclick="jumpToSummaryForBike('${b.regNumber}')" class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono transition-all ${currentSummaryReg === b.regNumber ? 'bg-emerald-500 text-white shadow-md' : 'bg-surface-850 hover:bg-surface-750 text-slate-300 border border-slate-700/80'}">
-          ${b.regNumber} <span class="opacity-75 font-normal text-[10px]">(${b.brand} ${b.model})</span>
-        </button>
-      `).join('');
-    }
-  }
-
-  // If already viewing a registration, refresh its display
-  if (currentSummaryReg) {
-    const bike = findBikeByReg(currentSummaryReg);
-    if (bike) {
-      displayVehicleDossier(bike);
-      return;
-    }
-  }
-
-  // Otherwise, if bikes exist and nothing selected yet, select first bike automatically!
-  if (bikes.length > 0 && !currentSummaryReg) {
-    fetchVehicleSummary(bikes[0].regNumber);
-  } else if (bikes.length === 0) {
-    document.getElementById('summary-dossier-container')?.classList.add('hidden');
-    document.getElementById('summary-empty-prompt')?.classList.remove('hidden');
-  }
-}
-
-function fetchVehicleSummary(regNumber) {
-  const bike = findBikeByReg(regNumber);
-  const regInput = document.getElementById('summary-reg-input');
-  if (regInput) regInput.value = regNumber;
-
-  if (!bike) {
-    alert(`No vehicle found with Registration Number: "${regNumber}". Please check the registration number or select from the available vehicles.`);
-    return;
-  }
-
-  currentSummaryReg = bike.regNumber;
-  displayVehicleDossier(bike);
-}
-
-function displayVehicleDossier(bike) {
-  const emptyPrompt = document.getElementById('summary-empty-prompt');
-  const dossierContainer = document.getElementById('summary-dossier-container');
-  emptyPrompt?.classList.add('hidden');
-  dossierContainer?.classList.remove('hidden');
-
-  const refurbItems = bike.refurbishments || [];
-  const refurbTotal = refurbItems.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
-  const costBasis = getCostBasis(bike);
-  const metrics = getBikeProfitMetrics(bike);
-  const isSold = bike.status === 'Sold';
-
-  // Header Banner
-  const titleEl = document.getElementById('dossier-bike-title');
-  const regBadgeEl = document.getElementById('dossier-reg-badge');
-  const statusBadgeEl = document.getElementById('dossier-status-badge');
-  const subtitleEl = document.getElementById('dossier-subtitle');
-  const billBtn = document.getElementById('dossier-bill-btn');
-  const sellBtnText = document.getElementById('dossier-action-sell-text');
-
-  if (titleEl) titleEl.textContent = `${bike.brand} ${bike.model}`;
-  if (regBadgeEl) regBadgeEl.textContent = bike.regNumber;
-  if (statusBadgeEl) {
-    statusBadgeEl.textContent = bike.status;
-    statusBadgeEl.className = `px-2.5 py-1 rounded-lg text-xs font-bold ${getStatusClass(bike.status)}`;
-  }
-  if (subtitleEl) subtitleEl.textContent = `Manufacture Year ${bike.year || '-'} • Engine ${bike.engineCC ? bike.engineCC + ' CC' : 'Standard'} • ${bike.variant || 'Standard Edition'}`;
-  
-  if (billBtn) {
-    if (isSold) billBtn.classList.remove('hidden');
-    else billBtn.classList.add('hidden');
-  }
-  if (sellBtnText) sellBtnText.textContent = isSold ? 'Edit Sale Info' : 'Record Sale';
-
-  // SECTION 1: INVENTORY & PURCHASE (BUYING) DATA
-  document.getElementById('dossier-make-model').textContent = `${bike.brand} ${bike.model}`;
-  document.getElementById('dossier-variant').textContent = bike.variant || 'Standard';
-  document.getElementById('dossier-year').textContent = bike.year || '-';
-  document.getElementById('dossier-cc').textContent = bike.engineCC ? `${bike.engineCC} CC` : '-';
-  document.getElementById('dossier-purchase-date').textContent = bike.purchaseDate || '-';
-  document.getElementById('dossier-purchase-price').textContent = formatCurrency(bike.purchasePrice);
-  document.getElementById('dossier-seller-name').textContent = bike.sellerName || '-';
-  document.getElementById('dossier-seller-phone').textContent = bike.sellerPhone || '-';
-
-  // SECTION 2: REFURBISHMENT & REPAIRS DATA
-  document.getElementById('dossier-refurb-total').textContent = formatCurrency(refurbTotal);
-  document.getElementById('dossier-refurb-count-badge').textContent = `${refurbItems.length} ${refurbItems.length === 1 ? 'job logged' : 'jobs logged'}`;
-  
-  const itemsListEl = document.getElementById('dossier-refurb-items-list');
-  if (itemsListEl) {
-    if (refurbItems.length === 0) {
-      itemsListEl.innerHTML = '<div class="p-3 text-center text-xs text-slate-500 italic bg-surface-900/40 rounded-xl">No repairs recorded for this vehicle. Total refurbishment cost is ₹0.</div>';
-    } else {
-      itemsListEl.innerHTML = refurbItems.map((r, idx) => `
-        <div class="flex items-center justify-between p-2 rounded-lg bg-surface-900/60 border border-slate-800 text-xs">
-          <div class="flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-            <div>
-              <span class="font-medium text-slate-200 block">${r.description}</span>
-              <span class="text-[10px] text-slate-500 font-mono">${r.date || 'Workshop'}</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-mono font-bold text-purple-300">${formatCurrency(r.cost)}</span>
-            <button type="button" onclick="removeWorkshopRepair('${bike.id}', ${idx})" class="text-slate-500 hover:text-rose-400 transition-colors" title="Delete repair">×</button>
-          </div>
-        </div>
-      `).join('');
-    }
-  }
-
-  // SECTION 3: SELLING INFORMATION & CUSTOMER DETAILS
-  const soldContainer = document.getElementById('dossier-sold-details');
-  const unsoldNotice = document.getElementById('dossier-unsold-notice');
-
-  if (isSold) {
-    soldContainer?.classList.remove('hidden');
-    unsoldNotice?.classList.add('hidden');
-    document.getElementById('dossier-sale-status').textContent = 'Sold to Customer';
-    document.getElementById('dossier-sale-status').className = 'font-bold text-emerald-400 block';
-    document.getElementById('dossier-sale-date').textContent = bike.saleDate || '-';
-    document.getElementById('dossier-buyer-name').textContent = bike.buyerName || '-';
-    document.getElementById('dossier-buyer-phone').textContent = bike.buyerPhone || '-';
-    document.getElementById('dossier-sale-price').textContent = formatCurrency(bike.sellingPrice);
-  } else {
-    soldContainer?.classList.add('hidden');
-    unsoldNotice?.classList.remove('hidden');
-    document.getElementById('dossier-target-price').textContent = formatCurrency(bike.sellingPrice || (costBasis * 1.2));
-  }
-
-  // SECTION 4: MASTER FINANCIAL P&L & CONSOLIDATION
-  document.getElementById('dossier-fin-buy').textContent = formatCurrency(bike.purchasePrice);
-  document.getElementById('dossier-fin-refurb').textContent = `+${formatCurrency(refurbTotal)}`;
-  document.getElementById('dossier-fin-costbasis').textContent = formatCurrency(costBasis);
-  document.getElementById('dossier-fin-sell').textContent = formatCurrency(bike.sellingPrice);
-
-  const profitEl = document.getElementById('dossier-fin-profit');
-  const marginEl = document.getElementById('dossier-fin-margin');
-  const roiEl = document.getElementById('dossier-fin-roi');
-  const finStatusEl = document.getElementById('dossier-fin-status-text');
-
-  const profit = metrics.profit;
-  const margin = metrics.margin;
-  const roi = costBasis > 0 ? (profit / costBasis) * 100 : 0;
-  const isPositive = profit >= 0;
-
-  if (profitEl) {
-    profitEl.textContent = `${isPositive ? '+' : ''}${formatCurrency(profit)}`;
-    profitEl.className = `text-2xl font-black font-mono-numbers ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`;
-  }
-  if (marginEl) {
-    marginEl.textContent = `${isPositive ? '+' : ''}${margin.toFixed(1)}% Margin`;
-    marginEl.className = `px-2.5 py-1 rounded-full text-xs font-bold block mb-1 ${isPositive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`;
-  }
-  if (roiEl) roiEl.textContent = `ROI: ${isPositive ? '+' : ''}${roi.toFixed(1)}%`;
-  if (finStatusEl) {
-    if (isSold) {
-      finStatusEl.textContent = isPositive ? 'Sold with Realized Profit' : 'Sold at a Loss';
-      finStatusEl.className = isPositive ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
-    } else {
-      finStatusEl.textContent = 'In Showroom (Projected P&L)';
-      finStatusEl.className = 'text-blue-400 font-bold';
-    }
-  }
-
-  lucide.createIcons();
-}
-
-function openDossierPrintModal(bike) {
-  const modal = document.getElementById('dossier-print-modal');
-  const container = document.getElementById('printable-dossier-container');
-  if (!modal || !container) return;
-
-  const refurbItems = bike.refurbishments || [];
-  const refurbTotal = refurbItems.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
-  const costBasis = getCostBasis(bike);
-  const metrics = getBikeProfitMetrics(bike);
-  const isSold = bike.status === 'Sold';
-
-  container.innerHTML = `
-    <!-- Dossier Print Layout -->
-    <div class="space-y-6 text-slate-800">
-      
-      <!-- Report Header -->
-      <div class="flex items-center justify-between pb-4 border-b-2 border-slate-900">
-        <div class="flex items-center gap-3">
-          <img src="logo.jpg" alt="FastX Moto Logo" class="w-12 h-12 object-cover rounded-xl border border-slate-400">
-          <div>
-            <h1 class="text-2xl font-black tracking-tight text-slate-900">FastX Moto Dealership</h1>
-            <p class="text-xs text-slate-600 font-semibold uppercase tracking-wider">Vehicle 360° Total Summary & Audit Dossier</p>
-          </div>
-        </div>
-        <div class="text-right text-xs text-slate-600">
-          <div>Dossier Date: <strong>${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></div>
-          <div class="font-mono text-[11px] text-slate-500">ID: ${bike.id}</div>
-        </div>
-      </div>
-
-      <!-- Vehicle Identity Banner -->
-      <div class="p-4 bg-slate-100 rounded-xl border border-slate-300 flex items-center justify-between">
-        <div>
-          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Vehicle Model & Specs</span>
-          <h2 class="text-xl font-black text-slate-900">${bike.brand} ${bike.model} (${bike.year || '-'})</h2>
-          <p class="text-xs text-slate-600">${bike.variant || 'Standard'} • ${bike.engineCC ? bike.engineCC + ' CC' : 'Standard'}</p>
-        </div>
-        <div class="text-right">
-          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Registration Number</span>
-          <span class="text-lg font-black font-mono text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-300 inline-block mt-0.5">${bike.regNumber}</span>
-          <span class="block text-xs font-bold text-slate-700 mt-1 uppercase">Status: ${bike.status}</span>
-        </div>
-      </div>
-
-      <!-- Module 1: Purchase (Buying) -->
-      <div class="border border-slate-300 rounded-xl p-4">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 pb-2 mb-3 border-b border-slate-200">
-          1. Vehicle Procurement & Purchase (Buying)
-        </h3>
-        <div class="grid grid-cols-2 gap-4 text-xs">
-          <div><span class="text-slate-500">Purchase Date:</span> <strong>${bike.purchaseDate || 'N/A'}</strong></div>
-          <div><span class="text-slate-500">Purchase Price:</span> <strong class="text-slate-900 font-mono text-sm">${formatCurrency(bike.purchasePrice)}</strong></div>
-          <div><span class="text-slate-500">Purchased From (Seller):</span> <strong>${bike.sellerName || '-'}</strong></div>
-          <div><span class="text-slate-500">Seller Contact Phone:</span> <strong>${bike.sellerPhone || '-'}</strong></div>
-        </div>
-      </div>
-
-      <!-- Module 2: Refurbishment & Repairs -->
-      <div class="border border-slate-300 rounded-xl p-4">
-        <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-200">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
-            2. Workshop Refurbishment & Repairs Log
-          </h3>
-          <span class="text-xs font-mono font-bold text-slate-900">Total Spent: ${formatCurrency(refurbTotal)}</span>
-        </div>
-        ${refurbItems.length === 0 ? `
-          <p class="text-xs text-slate-500 italic">No workshop repairs logged for this vehicle.</p>
-        ` : `
-          <table class="w-full text-xs text-left">
-            <thead>
-              <tr class="border-b border-slate-200 text-slate-600 uppercase text-[10px]">
-                <th class="py-1">Repair / Parts Work</th>
-                <th class="py-1">Service Date</th>
-                <th class="py-1 text-right">Cost</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${refurbItems.map(r => `
-                <tr>
-                  <td class="py-1 font-medium text-slate-800">${r.description}</td>
-                  <td class="py-1 text-slate-500 font-mono">${r.date || '-'}</td>
-                  <td class="py-1 text-right font-mono font-bold text-slate-900">${formatCurrency(r.cost)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `}
-      </div>
-
-      <!-- Module 3: Customer Selling Record -->
-      <div class="border border-slate-300 rounded-xl p-4">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 pb-2 mb-3 border-b border-slate-200">
-          3. Customer Sales & Delivery Record
-        </h3>
-        ${isSold ? `
-          <div class="grid grid-cols-2 gap-4 text-xs">
-            <div><span class="text-slate-500">Sale Date:</span> <strong>${bike.saleDate || 'N/A'}</strong></div>
-            <div><span class="text-slate-500">Agreed Selling Price:</span> <strong class="text-blue-700 font-mono text-sm">${formatCurrency(bike.sellingPrice)}</strong></div>
-            <div><span class="text-slate-500">Customer Full Name:</span> <strong>${bike.buyerName || '-'}</strong></div>
-            <div><span class="text-slate-500">Customer Phone:</span> <strong>${bike.buyerPhone || '-'}</strong></div>
-          </div>
-        ` : `
-          <p class="text-xs text-slate-600">This vehicle is currently in active showroom inventory awaiting customer purchase. Target Selling Price: <strong class="text-blue-700">${formatCurrency(bike.sellingPrice || (costBasis * 1.2))}</strong></p>
-        `}
-      </div>
-
-      <!-- Module 4: Commercial P&L Statement -->
-      <div class="bg-slate-50 border-2 border-slate-400 rounded-xl p-4">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 pb-2 mb-3 border-b border-slate-300">
-          4. Commercial Financial Consolidation (P&L)
-        </h3>
-        <div class="space-y-1.5 text-xs">
-          <div class="flex justify-between text-slate-600">
-            <span>Buying (Purchase Cost):</span>
-            <span class="font-mono font-bold">${formatCurrency(bike.purchasePrice)}</span>
-          </div>
-          <div class="flex justify-between text-slate-600">
-            <span>Refurbishment & Workshop Expenses:</span>
-            <span class="font-mono font-bold">+ ${formatCurrency(refurbTotal)}</span>
-          </div>
-          <div class="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-300">
-            <span>Total Landed Cost Basis:</span>
-            <span class="font-mono">${formatCurrency(costBasis)}</span>
-          </div>
-          <div class="flex justify-between text-blue-800 font-bold">
-            <span>Selling Price:</span>
-            <span class="font-mono">${formatCurrency(bike.sellingPrice)}</span>
-          </div>
-          <div class="flex justify-between items-center text-sm font-black text-slate-900 pt-2 border-t-2 border-slate-900">
-            <span>Net Realized Profit / Margin:</span>
-            <span class="font-mono ${metrics.profit >= 0 ? 'text-emerald-700' : 'text-rose-700'}">
-              ${metrics.profit >= 0 ? '+' : ''}${formatCurrency(metrics.profit)} (${metrics.margin.toFixed(1)}%)
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Signatures Footer -->
-      <div class="pt-8 grid grid-cols-2 gap-8 text-xs text-center border-t border-slate-300 mt-6">
-        <div>
-          <div class="border-b border-slate-400 pb-8 mb-2"></div>
-          <span class="font-bold text-slate-700">Workshop & Service In-Charge</span>
-        </div>
-        <div>
-          <div class="border-b border-slate-400 pb-8 mb-2"></div>
-          <span class="font-bold text-slate-700">Authorized Dealership Signatory</span>
-        </div>
-      </div>
-
-    </div>
-  `;
-
-  modal.classList.remove('modal-hidden');
-  lucide.createIcons();
-}
-
-function jumpToSummaryForBike(regNumber) {
-  switchModule('summary');
-  fetchVehicleSummary(regNumber);
-  const input = document.getElementById('summary-reg-input');
-  if (input) input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function jumpToSellingForBike(regNumber) {
-  switchModule('selling');
-  prefillSellingReg(regNumber);
 }
 
 // ============================================================================
@@ -1700,9 +829,7 @@ function setupEventListeners() {
       bikes = [];
       saveData();
       renderApp();
-      renderSellingHub();
       renderWorkshopHub();
-      renderSummaryHub();
       updateCharts();
       alert('All records cleared successfully.');
     }
@@ -1715,9 +842,7 @@ function setupEventListeners() {
         bikes = JSON.parse(JSON.stringify(SAMPLE_DEMO_BIKES));
         saveData();
         renderApp();
-        renderSellingHub();
         renderWorkshopHub();
-        renderSummaryHub();
         updateCharts();
       }
     } else {
@@ -2042,11 +1167,6 @@ function renderTableView(list, tbody) {
 
         <td class="py-3.5 px-4 text-right">
           <div class="flex items-center justify-end gap-1.5">
-            <!-- 360 Summary Action Button -->
-            <button onclick="jumpToSummaryForBike('${bike.regNumber}')" class="w-7 h-7 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 flex items-center justify-center transition-colors" title="View 360° Total Summary">
-              <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i>
-            </button>
-
             ${bike.status === 'In Stock' || bike.status === 'Refurbishing' || bike.status === 'Reserved' ? `
               <button onclick="openQuickSaleModal('${bike.id}')" class="px-2.5 py-1 rounded-lg bg-blue-600/80 hover:bg-blue-600 text-white font-semibold text-[11px] shadow transition-colors flex items-center gap-1" title="Record Sale">
                 <i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5"></i>
@@ -2174,9 +1294,6 @@ function renderGridView(list, grid) {
           `}
 
           <div class="flex items-center gap-1">
-            <button onclick="jumpToSummaryForBike('${bike.regNumber}')" class="w-8 h-8 rounded-xl bg-surface-800 hover:bg-emerald-500/20 hover:text-emerald-300 text-slate-400 flex items-center justify-center transition-colors" title="360° Total Summary">
-              <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-emerald-400"></i>
-            </button>
             <button onclick="openWorkshopJobModal('${bike.id}')" class="w-8 h-8 rounded-xl bg-surface-800 hover:bg-purple-500/20 hover:text-purple-300 text-slate-400 flex items-center justify-center transition-colors" title="Manage Workshop Costs">
               <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
             </button>
@@ -2397,9 +1514,7 @@ function handleSaveBikeRecord() {
   saveData();
   document.getElementById('bike-modal')?.classList.add('modal-hidden');
   renderApp();
-  renderSellingHub();
   renderWorkshopHub();
-  renderSummaryHub();
 }
 
 function deleteBikeRecord(bikeId) {
@@ -2410,9 +1525,7 @@ function deleteBikeRecord(bikeId) {
     bikes = bikes.filter(b => b.id !== bikeId);
     saveData();
     renderApp();
-    renderSellingHub();
     renderWorkshopHub();
-    renderSummaryHub();
   }
 }
 
@@ -2491,9 +1604,7 @@ function handleQuickSaleSubmit(e) {
   saveData();
   document.getElementById('quick-sale-modal')?.classList.add('modal-hidden');
   renderApp();
-  renderSellingHub();
   renderWorkshopHub();
-  renderSummaryHub();
 
   triggerCelebrationConfetti();
 }

@@ -201,21 +201,18 @@ html, body {
   }
 }
 
-/* Print Specific Rules (For Bill of Sale / Invoices, Dossiers & Job Cards) */
+/* Print Specific Rules (For Bill of Sale / Invoices & Job Cards) */
 @media print {
   body * {
     visibility: hidden;
   }
   #printable-invoice-container,
   #printable-invoice-container *,
-  #printable-dossier-container,
-  #printable-dossier-container *,
   #printable-jobcard-container,
   #printable-jobcard-container * {
     visibility: visible;
   }
   #printable-invoice-container,
-  #printable-dossier-container,
   #printable-jobcard-container {
     position: absolute;
     left: 0;
