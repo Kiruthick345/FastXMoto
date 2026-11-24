@@ -245,21 +245,18 @@ function setupChangePasswordModal() {
 }
 
 // ============================================================================
-// 2. DATA MANAGEMENT & LOCALSTORAGE
+// 2. DATA MANAGEMENT & EXCEL SHEET DATABASE ENGINE
 // ============================================================================
 
 /**
- * Load bikes from localStorage or initialize with empty records
+ * Load bikes from FastXMoto_Database.xlsx API or localStorage (zero demo data)
  */
-function loadData() {
-  const cleanInitKey = 'fastxmoto_clean_mode_v1';
-  const hasCleanInitialized = localStorage.getItem(cleanInitKey);
-
-  if (!hasCleanInitialized) {
+async function loadData() {
+  const cleanDemoKey = 'fastxmoto_zero_demo_v4';
+  if (!localStorage.getItem(cleanDemoKey)) {
     localStorage.removeItem('fastxmoto_bikes_records');
-    localStorage.setItem(cleanInitKey, 'true');
+    localStorage.setItem(cleanDemoKey, 'true');
     bikes = [];
-    saveData();
   } else {
     const savedData = localStorage.getItem('fastxmoto_bikes_records');
     if (savedData) {
@@ -274,6 +271,26 @@ function loadData() {
     }
   }
 
+  // Filter out any lingering mock demo bikes
+  bikes = bikes.filter(b => !['BIKE-2026-001', 'BIKE-2026-002'].includes(b.id) && b.sellerName !== 'Vikram Malhotra');
+
+  // Fetch live from Excel sheet database API
+  try {
+    const resp = await fetch('/api/database');
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.status === 'success' && Array.isArray(result.bikes)) {
+        bikes = result.bikes;
+        localStorage.setItem('fastxmoto_bikes_records', JSON.stringify(bikes));
+        console.log(`Loaded ${bikes.length} bikes from FastXMoto_Database.xlsx`);
+        renderApp();
+        renderWorkshopHub();
+      }
+    }
+  } catch (err) {
+    console.log('Server Excel API offline or static mode, using local database cache.');
+  }
+
   const savedCurrency = localStorage.getItem('fastxmoto_currency');
   if (savedCurrency && CURRENCY_CONFIG[savedCurrency]) {
     currentCurrency = savedCurrency;
@@ -283,10 +300,171 @@ function loadData() {
 }
 
 /**
- * Persist bikes to localStorage
+ * Persist bikes to localStorage and sync live to FastXMoto_Database.xlsx
  */
 function saveData() {
   localStorage.setItem('fastxmoto_bikes_records', JSON.stringify(bikes));
+  
+  // Sync live to FastXMoto_Database.xlsx via server API
+  try {
+    fetch('/api/database', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bikes: bikes })
+    }).then(resp => resp.json()).then(res => {
+      console.log('Excel Database sync response:', res);
+    }).catch(err => {
+      console.log('Background Excel database sync notice:', err.message);
+    });
+  } catch (e) {
+    // Standalone static fallback
+  }
+}
+
+/**
+ * Export full database to FastXMoto_Database.xlsx using SheetJS (client fallback)
+ */
+function exportDatabaseToExcel() {
+  if (typeof XLSX === 'undefined') {
+    window.location.href = '/api/export-excel';
+    return;
+  }
+
+  const masterRows = bikes.map(b => {
+    const buyPrice = Number(b.purchasePrice) || 0;
+    const refurbTotal = (b.refurbishments || []).reduce((acc, r) => acc + (Number(r.cost) || 0), 0);
+    const costBasis = buyPrice + refurbTotal;
+    const sellPrice = Number(b.sellingPrice) || 0;
+    const profit = b.status === 'Sold' ? sellPrice - costBasis : 0;
+    return {
+      'ID': b.id,
+      'Registration_Number': b.regNumber,
+      'Brand': b.brand,
+      'Model': b.model,
+      'Year': b.year,
+      'Engine_CC': b.engineCC || '',
+      'Purchase_Date': b.purchaseDate || '',
+      'Purchase_Price': buyPrice,
+      'Seller_Name': b.sellerName || '',
+      'Seller_Phone': b.sellerPhone || '',
+      'Workshop_Total_Cost': refurbTotal,
+      'Total_Cost_Basis': costBasis,
+      'Status': b.status || 'In Stock',
+      'Selling_Price': sellPrice,
+      'Sale_Date': b.saleDate || '',
+      'Buyer_Name': b.buyerName || '',
+      'Buyer_Phone': b.buyerPhone || '',
+      'Net_Profit': profit,
+      'Created_At': b.createdAt || ''
+    };
+  });
+
+  const repairRows = [];
+  bikes.forEach(b => {
+    (b.refurbishments || []).forEach(r => {
+      repairRows.push({
+        'Repair_ID': r.id,
+        'Registration_Number': b.regNumber,
+        'Vehicle_Name': `${b.brand} ${b.model}`,
+        'Repair_Description': r.description,
+        'Repair_Cost': Number(r.cost) || 0,
+        'Repair_Date': r.date || ''
+      });
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.json_to_sheet(masterRows);
+  const ws2 = XLSX.utils.json_to_sheet(repairRows);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Vehicles_Master');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Workshop_Repairs');
+  XLSX.writeFile(wb, 'FastXMoto_Database.xlsx');
+}
+
+/**
+ * Import vehicle and workshop records from an Excel file (.xlsx)
+ */
+function importFromExcel(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (typeof XLSX === 'undefined') {
+    alert('Excel processor library is loading. Please try again.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    try {
+      const data = new Uint8Array(event.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      const repairsByReg = {};
+      if (workbook.SheetNames.includes('Workshop_Repairs')) {
+        const repairsSheet = workbook.Sheets['Workshop_Repairs'];
+        const repairsData = XLSX.utils.sheet_to_json(repairsSheet);
+        repairsData.forEach(r => {
+          const reg = normalizeReg(r['Registration_Number'] || r['RegNumber']);
+          if (!reg) return;
+          if (!repairsByReg[reg]) repairsByReg[reg] = [];
+          repairsByReg[reg].push({
+            id: r['Repair_ID'] || `ref-${Date.now()}-${Math.random()}`,
+            description: r['Repair_Description'] || r['Description'] || '',
+            cost: Number(r['Repair_Cost'] || r['Cost']) || 0,
+            date: r['Repair_Date'] || r['Date'] || ''
+          });
+        });
+      }
+
+      const importedBikes = [];
+      const masterSheetName = workbook.SheetNames.includes('Vehicles_Master') ? 'Vehicles_Master' : workbook.SheetNames[0];
+      const masterSheet = workbook.Sheets[masterSheetName];
+      const masterData = XLSX.utils.sheet_to_json(masterSheet);
+
+      masterData.forEach((row, idx) => {
+        const reg = (row['Registration_Number'] || row['RegNumber'] || row['regNumber'] || '').trim().toUpperCase();
+        if (!reg) return;
+        const cleanReg = normalizeReg(reg);
+        importedBikes.push({
+          id: row['ID'] || row['id'] || `BIKE-${Date.now()}-${idx + 1}`,
+          regNumber: reg,
+          brand: row['Brand'] || row['brand'] || 'Motorcycle',
+          model: row['Model'] || row['model'] || reg,
+          variant: row['Variant'] || row['variant'] || '',
+          year: parseInt(row['Year'] || row['year']) || 2023,
+          engineCC: parseInt(row['Engine_CC'] || row['engineCC']) || null,
+          purchaseDate: row['Purchase_Date'] || row['purchaseDate'] || new Date().toISOString().split('T')[0],
+          purchasePrice: parseFloat(row['Purchase_Price'] || row['purchasePrice']) || 0,
+          sellerName: row['Seller_Name'] || row['sellerName'] || 'Previous Owner',
+          sellerPhone: row['Seller_Phone'] || row['sellerPhone'] || '',
+          status: row['Status'] || row['status'] || 'In Stock',
+          sellingPrice: parseFloat(row['Selling_Price'] || row['sellingPrice']) || 0,
+          saleDate: row['Sale_Date'] || row['saleDate'] || '',
+          buyerName: row['Buyer_Name'] || row['buyerName'] || '',
+          buyerPhone: row['Buyer_Phone'] || row['buyerPhone'] || '',
+          refurbishments: repairsByReg[cleanReg] || [],
+          documents: { rcBook: false, insurance: false, puc: false },
+          createdAt: row['Created_At'] || new Date().toISOString()
+        });
+      });
+
+      if (importedBikes.length > 0) {
+        bikes = importedBikes;
+        saveData();
+        renderApp();
+        renderWorkshopHub();
+        updateCharts();
+        alert(`✓ Successfully loaded ${importedBikes.length} records from Excel Database into FastXMoto!`);
+      } else {
+        alert('No vehicle records found in the uploaded Excel file.');
+      }
+    } catch (err) {
+      console.error('Failed to import Excel sheet:', err);
+      alert('Error reading Excel file. Please ensure it is a valid .xlsx file.');
+    }
+    e.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 /**
@@ -465,8 +643,8 @@ function handleDirectRepairSubmit(e) {
   const desc = descInput?.value.trim() || '';
   const cost = parseFloat(costInput?.value);
 
-  if (!rawReg || !desc || isNaN(cost) || cost <= 0) {
-    alert('Please enter a valid Registration Number, repair description, and positive cost amount.');
+  if (!rawReg || !desc || isNaN(cost) || cost < 0) {
+    alert('Please enter a valid Registration Number, repair description, and non-negative cost amount.');
     return;
   }
 
@@ -839,7 +1017,24 @@ function setupEventListeners() {
     exportDropdownMenu?.classList.add('hidden');
   });
 
-  // Export / Import
+  // Export / Import Excel Database
+  document.getElementById('excel-db-download-btn')?.addEventListener('click', (e) => {
+    // If backend endpoint is reachable, let browser download FastXMoto_Database.xlsx directly;
+    // SheetJS client fallback is also triggered if needed
+    if (typeof XLSX !== 'undefined') {
+      e.preventDefault();
+      exportDatabaseToExcel();
+    }
+  });
+  document.getElementById('menu-download-excel-btn')?.addEventListener('click', (e) => {
+    if (typeof XLSX !== 'undefined') {
+      e.preventDefault();
+      exportDatabaseToExcel();
+    }
+  });
+  document.getElementById('import-excel-input')?.addEventListener('change', importFromExcel);
+
+  // CSV & JSON Backups
   document.getElementById('export-csv-btn')?.addEventListener('click', exportToCSV);
   document.getElementById('footer-export-btn')?.addEventListener('click', exportToCSV);
   document.getElementById('export-json-btn')?.addEventListener('click', exportToJSON);
@@ -847,7 +1042,7 @@ function setupEventListeners() {
 
   // Clear All Records Button
   document.getElementById('clear-all-btn')?.addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear all bike records? This will delete all current records from this device.')) {
+    if (confirm('Are you sure you want to clear all bike records? This will delete all current records from the database.')) {
       bikes = [];
       saveData();
       renderApp();
@@ -857,27 +1052,12 @@ function setupEventListeners() {
     }
   });
 
-  // Load Demo Sample Data
-  const handleLoadSampleData = () => {
-    if (typeof SAMPLE_DEMO_BIKES !== 'undefined' && SAMPLE_DEMO_BIKES.length > 0) {
-      if (bikes.length === 0 || confirm('Load sample demo records into your inventory?')) {
-        bikes = JSON.parse(JSON.stringify(SAMPLE_DEMO_BIKES));
-        saveData();
-        renderApp();
-        renderWorkshopHub();
-        updateCharts();
-      }
-    } else {
-      alert('No demo sample data available.');
-    }
-  };
-
-  document.getElementById('load-sample-btn')?.addEventListener('click', handleLoadSampleData);
-  document.getElementById('empty-load-sample-btn')?.addEventListener('click', handleLoadSampleData);
-
   // Modal Open Buttons
   document.getElementById('open-add-bike-modal-btn')?.addEventListener('click', () => openBikeModal());
   document.getElementById('empty-add-bike-btn')?.addEventListener('click', () => openBikeModal());
+
+  // Setup Registration Number Auto-lookup in Add/Edit Bike Modal
+  setupModalRegistrationLookup();
 
   // Modal Close Buttons
   setupModalCloseButtons();
@@ -1342,6 +1522,9 @@ function openBikeModal(bikeId = null) {
   const title = document.getElementById('bike-modal-title');
   const form = document.getElementById('bike-form');
   const formId = document.getElementById('form-bike-id');
+  const lookupBadge = document.getElementById('modal-reg-lookup-badge');
+
+  lookupBadge?.classList.add('hidden');
 
   if (bikeId) {
     const bike = bikes.find(b => b.id === bikeId);
@@ -1391,6 +1574,71 @@ function openBikeModal(bikeId = null) {
 
   modal?.classList.remove('modal-hidden');
   lucide.createIcons();
+}
+
+/**
+ * Live auto-lookup in Add Motorcycle Modal by Registration No.
+ * Entering an existing Registration No. immediately populates specifications & buying details,
+ * allowing the user to seamlessly add Section 4 Selling Information anytime.
+ */
+function setupModalRegistrationLookup() {
+  const regInput = document.getElementById('form-reg-number');
+  const lookupBadge = document.getElementById('modal-reg-lookup-badge');
+  const lookupText = document.getElementById('modal-reg-lookup-text');
+
+  if (!regInput) return;
+
+  const handleLookup = () => {
+    const rawReg = regInput.value.trim();
+    const cleanReg = normalizeReg(rawReg);
+
+    if (!cleanReg) {
+      lookupBadge?.classList.add('hidden');
+      return;
+    }
+
+    const currentEditingId = document.getElementById('form-bike-id')?.value;
+    const existingBike = bikes.find(b => normalizeReg(b.regNumber) === cleanReg);
+
+    if (existingBike && (!currentEditingId || existingBike.id !== currentEditingId)) {
+      // Auto-populate specifications, purchase, and selling details
+      document.getElementById('form-bike-id').value = existingBike.id;
+      document.getElementById('form-brand').value = existingBike.brand || '';
+      document.getElementById('form-model').value = existingBike.model || '';
+      document.getElementById('form-year').value = existingBike.year || new Date().getFullYear();
+      document.getElementById('form-engine-cc').value = existingBike.engineCC || '';
+      document.getElementById('form-purchase-date').value = existingBike.purchaseDate || '';
+      document.getElementById('form-purchase-price').value = existingBike.purchasePrice || 0;
+      document.getElementById('form-seller-name').value = existingBike.sellerName || '';
+      document.getElementById('form-seller-phone').value = existingBike.sellerPhone || '';
+
+      // Section 4 Selling Information
+      document.getElementById('form-status').value = existingBike.status || 'In Stock';
+      document.getElementById('form-selling-price').value = existingBike.sellingPrice || '';
+      document.getElementById('form-sale-date').value = existingBike.saleDate || '';
+      document.getElementById('form-buyer-name').value = existingBike.buyerName || '';
+      document.getElementById('form-buyer-phone').value = existingBike.buyerPhone || '';
+
+      formRefurbishments = (existingBike.refurbishments || []).map(r => ({ ...r }));
+      renderFormRefurbishments();
+      updateFormCalculatedProfit();
+
+      const modalTitle = document.getElementById('bike-modal-title');
+      if (modalTitle) {
+        modalTitle.textContent = `Update Record: ${existingBike.brand} ${existingBike.model} (${existingBike.regNumber})`;
+      }
+
+      if (lookupBadge && lookupText) {
+        lookupText.textContent = `Found in Database: ${existingBike.brand} ${existingBike.model} (${existingBike.year}) • Status: ${existingBike.status}. Loaded! Fill Section 4 below to add/update selling information.`;
+        lookupBadge.classList.remove('hidden');
+      }
+    } else if (!existingBike && !currentEditingId) {
+      lookupBadge?.classList.add('hidden');
+    }
+  };
+
+  regInput.addEventListener('input', handleLookup);
+  regInput.addEventListener('change', handleLookup);
 }
 
 function renderFormRefurbishments() {
@@ -1444,8 +1692,8 @@ document.getElementById('form-add-refurb-inline-btn')?.addEventListener('click',
     descInput?.focus();
     return;
   }
-  if (isNaN(cost) || cost <= 0) {
-    alert('Please enter a valid positive cost amount in ₹.');
+  if (isNaN(cost) || cost < 0) {
+    alert('Please enter a valid cost amount in ₹.');
     costInput?.focus();
     return;
   }
@@ -1519,8 +1767,8 @@ function handleSaveBikeRecord() {
   const purchasePrice = parseFloat(document.getElementById('form-purchase-price')?.value);
   const sellerName = document.getElementById('form-seller-name')?.value.trim() || 'Previous Owner';
 
-  if (!brand || !model || !regNumber || isNaN(purchasePrice)) {
-    alert('Please fill all mandatory fields: Brand, Model, Registration No., and Purchase Price.');
+  if (!brand || !model || !regNumber || isNaN(purchasePrice) || purchasePrice < 0) {
+    alert('Please fill mandatory fields: Brand, Model, Registration No., and non-negative Purchase Price.');
     return;
   }
 
@@ -1536,51 +1784,70 @@ function handleSaveBikeRecord() {
     });
   }
 
+  const cleanReg = normalizeReg(regNumber);
   const existingId = document.getElementById('form-bike-id')?.value;
-  const existingBike = existingId ? bikes.find(b => b.id === existingId) : null;
+  // If existingId is not set, also check if bikes already has this registration number
+  const matchedBike = existingId ? bikes.find(b => b.id === existingId) : bikes.find(b => normalizeReg(b.regNumber) === cleanReg);
+
+  const sellingPrice = parseFloat(document.getElementById('form-selling-price')?.value) || 0;
+  const saleDate = document.getElementById('form-sale-date')?.value || '';
+  const buyerName = document.getElementById('form-buyer-name')?.value.trim() || '';
+  const buyerPhone = document.getElementById('form-buyer-phone')?.value.trim() || '';
+  let status = document.getElementById('form-status')?.value || 'In Stock';
+
+  // Auto-set status to Sold if selling details provided and currently In Stock
+  if (sellingPrice > 0 && (saleDate || buyerName) && status === 'In Stock') {
+    status = 'Sold';
+  }
+
   const bikeRecord = {
-    id: existingId || `BIKE-${new Date().getFullYear()}-${String(bikes.length + 1).padStart(3, '0')}`,
+    id: matchedBike ? matchedBike.id : `BIKE-${new Date().getFullYear()}-${String(bikes.length + 1).padStart(3, '0')}`,
     brand: brand,
     model: model,
-    variant: document.getElementById('form-variant')?.value.trim() || existingBike?.variant || '',
+    variant: document.getElementById('form-variant')?.value.trim() || matchedBike?.variant || '',
     regNumber: regNumber,
     year: parseInt(document.getElementById('form-year')?.value) || new Date().getFullYear(),
     engineCC: parseInt(document.getElementById('form-engine-cc')?.value) || null,
-    engineCC: parseInt(document.getElementById('form-engine-cc')?.value) || null,
-    odometerKm: existingBike?.odometerKm || 0,
-    color: existingBike?.color || '',
-    condition: existingBike?.condition || 'Good',
-    chassisNumber: existingBike?.chassisNumber || '',
-    engineNumber: existingBike?.engineNumber || '',
-    image: existingBike?.image || '',
+    odometerKm: matchedBike?.odometerKm || 0,
+    color: matchedBike?.color || '',
+    condition: matchedBike?.condition || 'Good',
+    chassisNumber: matchedBike?.chassisNumber || '',
+    engineNumber: matchedBike?.engineNumber || '',
+    image: matchedBike?.image || '',
 
     purchaseDate: document.getElementById('form-purchase-date')?.value || new Date().toISOString().split('T')[0],
     sellerName: sellerName,
     sellerPhone: document.getElementById('form-seller-phone')?.value.trim() || '',
-    sellerAddress: existingBike?.sellerAddress || '',
-    sellerIdProof: existingBike?.sellerIdProof || '',
+    sellerAddress: matchedBike?.sellerAddress || '',
+    sellerIdProof: matchedBike?.sellerIdProof || '',
     purchasePrice: purchasePrice,
 
     refurbishments: formRefurbishments,
 
-    status: document.getElementById('form-status')?.value || 'In Stock',
-    sellingPrice: parseFloat(document.getElementById('form-selling-price')?.value) || 0,
-    saleDate: document.getElementById('form-sale-date')?.value || '',
-    buyerName: document.getElementById('form-buyer-name')?.value.trim() || '',
-    buyerPhone: document.getElementById('form-buyer-phone')?.value.trim() || '',
-    buyerAddress: existingBike?.buyerAddress || '',
-    paymentMode: existingBike?.paymentMode || '',
-    saleNotes: existingBike?.saleNotes || '',
+    // Section 4: Selling Information & Status (Not mandatory - scalable anytime)
+    status: status,
+    sellingPrice: sellingPrice,
+    saleDate: saleDate,
+    buyerName: buyerName,
+    buyerPhone: buyerPhone,
+    buyerAddress: matchedBike?.buyerAddress || '',
+    paymentMode: matchedBike?.paymentMode || '',
+    saleNotes: matchedBike?.saleNotes || '',
 
-    rcStatus: existingBike?.rcStatus || 'Original Available',
-    insuranceValidTill: existingBike?.insuranceValidTill || '',
-    pucValidTill: existingBike?.pucValidTill || '',
-    nocAvailable: existingBike?.nocAvailable ?? true
+    rcStatus: matchedBike?.rcStatus || 'Original Available',
+    insuranceValidTill: matchedBike?.insuranceValidTill || '',
+    pucValidTill: matchedBike?.pucValidTill || '',
+    nocAvailable: matchedBike?.nocAvailable ?? true,
+    createdAt: matchedBike?.createdAt || new Date().toISOString()
   };
 
-  if (existingId) {
-    const idx = bikes.findIndex(b => b.id === existingId);
-    if (idx !== -1) bikes[idx] = bikeRecord;
+  if (matchedBike) {
+    const idx = bikes.findIndex(b => b.id === matchedBike.id);
+    if (idx !== -1) {
+      bikes[idx] = bikeRecord;
+    } else {
+      bikes.unshift(bikeRecord);
+    }
   } else {
     bikes.unshift(bikeRecord);
   }

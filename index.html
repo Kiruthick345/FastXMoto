@@ -214,6 +214,12 @@
             </div>
           </div>
 
+          <!-- Excel Database Sync / Download -->
+          <a href="/api/export-excel" id="excel-db-download-btn" download="FastXMoto_Database.xlsx" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all shadow-sm" title="Download or open FastXMoto_Database.xlsx">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+            <span class="hidden sm:inline">Excel DB</span>
+          </a>
+
           <!-- Data Dropdown Trigger -->
           <div class="relative">
             <button id="export-dropdown-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 hover:bg-surface-750 text-slate-300 border border-slate-700/80 transition-colors">
@@ -221,11 +227,17 @@
               <span class="hidden sm:inline">Data</span>
               <i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-0.5 text-slate-400"></i>
             </button>
-            <div id="export-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-surface-800 border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
-              <button id="export-csv-btn" class="w-full text-left px-4 py-2 hover:bg-slate-700/60 flex items-center gap-2 text-slate-200">
+            <div id="export-dropdown-menu" class="hidden absolute right-0 mt-2 w-52 bg-surface-800 border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
+              <a href="/api/export-excel" download="FastXMoto_Database.xlsx" id="menu-download-excel-btn" class="w-full text-left px-4 py-2 hover:bg-emerald-500/15 flex items-center gap-2 text-emerald-300 font-medium">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
-                Export to CSV (Excel)
-              </button>
+                Download Excel DB (.xlsx)
+              </a>
+              <label class="w-full text-left px-4 py-2 hover:bg-slate-700/60 flex items-center gap-2 text-slate-200 cursor-pointer">
+                <i data-lucide="upload" class="w-4 h-4 text-emerald-400"></i>
+                Import Excel Sheet (.xlsx)
+                <input type="file" id="import-excel-input" accept=".xlsx, .xls" class="hidden">
+              </label>
+              <div class="border-t border-slate-700 my-1"></div>
               <button id="export-json-btn" class="w-full text-left px-4 py-2 hover:bg-slate-700/60 flex items-center gap-2 text-slate-200">
                 <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
                 Download JSON Backup
@@ -239,10 +251,6 @@
               <button id="clear-all-btn" class="w-full text-left px-4 py-2 hover:bg-rose-500/10 text-rose-300 flex items-center gap-2">
                 <i data-lucide="trash-2" class="w-4 h-4 text-rose-400"></i>
                 Clear All Records
-              </button>
-              <button id="load-sample-btn" class="w-full text-left px-4 py-2 hover:bg-amber-500/10 text-amber-300 flex items-center gap-2">
-                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
-                Load Sample Data
               </button>
             </div>
           </div>
@@ -689,10 +697,6 @@
               <i data-lucide="plus" class="w-4 h-4"></i>
               Add First Bike Record
             </button>
-            <button id="empty-load-sample-btn" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold bg-surface-850 hover:bg-surface-750 text-slate-300 border border-slate-700 transition-all">
-              <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
-              Load Sample Data
-            </button>
           </div>
         </div>
 
@@ -779,9 +783,9 @@
                 type="number" 
                 id="ws-input-repair-cost" 
                 required 
-                min="1" 
-                step="50" 
-                placeholder="Cost in ₹" 
+                min="0" 
+                step="any" 
+                placeholder="Cost in ₹ (any whole number or amount)" 
                 class="w-full font-mono-numbers font-bold text-purple-300 bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-purple-500"
               >
             </div>
@@ -937,7 +941,11 @@
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Registration No. *</label>
-              <input type="text" id="form-reg-number" required placeholder="e.g. MH 12 AB 1234" class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+              <input type="text" id="form-reg-number" required placeholder="e.g. MH 12 AB 1234" class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500 font-bold">
+              <div id="modal-reg-lookup-badge" class="hidden mt-1.5 text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span id="modal-reg-lookup-text">Existing vehicle found! Loaded details.</span>
+              </div>
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Year of Make *</label>
@@ -964,7 +972,7 @@
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Purchase Price (<span class="currency-label">₹</span>) *</label>
-              <input type="number" id="form-purchase-price" required min="0" step="500" placeholder="e.g. 140000" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-bold text-sm focus:outline-none focus:border-brand-500">
+              <input type="number" id="form-purchase-price" required min="0" step="any" placeholder="e.g. 140000" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-bold text-sm focus:outline-none focus:border-brand-500">
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Purchased From (Seller Name)</label>
@@ -992,7 +1000,7 @@
               <input type="text" id="form-refurb-desc-inline" placeholder="Repair work (e.g. Service, Oil, Tyres)" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500">
             </div>
             <div class="sm:col-span-4">
-              <input type="number" id="form-refurb-cost-inline" placeholder="Repair Cost (₹)" min="0" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-purple-300 font-bold placeholder-slate-500 focus:outline-none focus:border-purple-500">
+              <input type="number" id="form-refurb-cost-inline" placeholder="Repair Cost (₹)" min="0" step="any" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-purple-300 font-bold placeholder-slate-500 focus:outline-none focus:border-purple-500">
             </div>
             <div class="sm:col-span-2">
               <button type="button" id="form-add-refurb-inline-btn" class="w-full h-full py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1">
@@ -1015,7 +1023,7 @@
           <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
             <div class="flex items-center gap-2 text-blue-400 font-bold uppercase tracking-wider text-[11px]">
               <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
-              <span>4. Selling Information & Status</span>
+              <span>4. Selling Information & Status (Optional - Add anytime when sold)</span>
             </div>
 
             <div class="flex items-center gap-2">
@@ -1031,8 +1039,8 @@
 
           <div id="sale-fields-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-slate-300 font-semibold mb-1">Selling Price / Expected Price (<span class="currency-label">₹</span>) *</label>
-              <input type="number" id="form-selling-price" min="0" step="500" placeholder="e.g. 175000" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-blue-400 font-bold text-sm focus:outline-none focus:border-brand-500">
+              <label class="block text-slate-300 font-semibold mb-1">Selling Price / Expected Price (<span class="currency-label">₹</span>)</label>
+              <input type="number" id="form-selling-price" min="0" step="any" placeholder="e.g. 175000 (Optional)" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-blue-400 font-bold text-sm focus:outline-none focus:border-brand-500">
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Sale Date</label>
@@ -1293,6 +1301,7 @@
   </div>
 
   <!-- External Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="bikes-data.js"></script>
   <script src="app.js"></script>
 </body>
