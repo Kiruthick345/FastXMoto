@@ -743,14 +743,10 @@
               <input 
                 type="text" 
                 id="ws-input-reg-no" 
-                list="ws-reg-datalist" 
                 required 
                 placeholder="e.g. MH 12 AB 4589" 
                 class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 font-bold"
               >
-              <datalist id="ws-reg-datalist">
-                <!-- Dynamically populated with all bikes from inventory -->
-              </datalist>
             </div>
             <!-- Auto-detected Bike Hint -->
             <div id="ws-detected-bike-badge" class="hidden mt-1.5 text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
@@ -940,10 +936,6 @@
               <input type="text" id="form-model" required placeholder="e.g. Classic 350, MT-15" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
             </div>
             <div>
-              <label class="block text-slate-300 font-semibold mb-1">Variant / Edition</label>
-              <input type="text" id="form-variant" placeholder="e.g. Dual ABS, Signals" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
-            </div>
-            <div>
               <label class="block text-slate-300 font-semibold mb-1">Registration No. *</label>
               <input type="text" id="form-reg-number" required placeholder="e.g. MH 12 AB 1234" class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
             </div>
@@ -975,8 +967,8 @@
               <input type="number" id="form-purchase-price" required min="0" step="500" placeholder="e.g. 140000" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-bold text-sm focus:outline-none focus:border-brand-500">
             </div>
             <div>
-              <label class="block text-slate-300 font-semibold mb-1">Purchased From (Seller Name) *</label>
-              <input type="text" id="form-seller-name" required placeholder="Full Name of Previous Owner" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+              <label class="block text-slate-300 font-semibold mb-1">Purchased From (Seller Name)</label>
+              <input type="text" id="form-seller-name" placeholder="Full Name of Previous Owner (Optional)" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Seller Phone Number</label>
@@ -992,10 +984,22 @@
               <i data-lucide="wrench" class="w-4 h-4"></i>
               <span>3. Refurbishment & Workshop Expenses</span>
             </div>
-            <button type="button" id="form-add-refurb-btn" class="flex items-center gap-1 text-[11px] font-semibold text-purple-400 hover:text-purple-300 px-2 py-1 rounded bg-purple-500/10 border border-purple-500/30">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-              Add Expense Item
-            </button>
+          </div>
+
+          <!-- Direct Input Row for Repair Cost & Description -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3">
+            <div class="sm:col-span-6">
+              <input type="text" id="form-refurb-desc-inline" placeholder="Repair work (e.g. Service, Oil, Tyres)" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500">
+            </div>
+            <div class="sm:col-span-4">
+              <input type="number" id="form-refurb-cost-inline" placeholder="Repair Cost (₹)" min="0" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-purple-300 font-bold placeholder-slate-500 focus:outline-none focus:border-purple-500">
+            </div>
+            <div class="sm:col-span-2">
+              <button type="button" id="form-add-refurb-inline-btn" class="w-full h-full py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Add</span>
+              </button>
+            </div>
           </div>
 
           <div id="form-refurb-list" class="space-y-2 mb-3"></div>

@@ -322,6 +322,13 @@ function getCostBasis(bike) {
 }
 
 /**
+ * Normalize vehicle registration number for cross-module lookup (e.g. "MH 12 AB 4589" -> "MH12AB4589")
+ */
+function normalizeReg(reg) {
+  return (reg || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+/**
  * Calculate profit/loss and margin % for a bike
  */
 function getBikeProfitMetrics(bike) {
@@ -394,21 +401,24 @@ function setupWorkshopEventListeners() {
 
   const checkRegInput = () => {
     const rawVal = regInput?.value.trim() || '';
-    const cleanVal = rawVal.toUpperCase().replace(/\s+/g, '');
+    const cleanVal = normalizeReg(rawVal);
 
     if (!cleanVal) {
       detectedBadge?.classList.add('hidden');
       return;
     }
 
-    const matchedBike = bikes.find(b => (b.regNumber || '').toUpperCase().replace(/\s+/g, '') === cleanVal);
+    const matchedBike = bikes.find(b => normalizeReg(b.regNumber) === cleanVal);
     if (matchedBike) {
       if (detectedBadge && detectedText) {
         detectedText.textContent = `Found in Inventory: ${matchedBike.brand} ${matchedBike.model} (${matchedBike.year}) • ${matchedBike.status}`;
         detectedBadge.classList.remove('hidden');
       }
     } else {
-      detectedBadge?.classList.add('hidden');
+      if (detectedBadge && detectedText) {
+        detectedText.textContent = `New vehicle • Will automatically link & register ${rawVal.toUpperCase()} in Inventory`;
+        detectedBadge.classList.remove('hidden');
+      }
     }
   };
 
@@ -451,64 +461,76 @@ function handleDirectRepairSubmit(e) {
   const alertEl = document.getElementById('ws-repair-success-alert');
   const msgEl = document.getElementById('ws-repair-success-msg');
 
-  const regNo = regInput?.value.trim().toUpperCase() || '';
+  const rawReg = regInput?.value.trim().toUpperCase() || '';
   const desc = descInput?.value.trim() || '';
   const cost = parseFloat(costInput?.value);
 
-  if (!regNo || !desc || isNaN(cost) || cost <= 0) {
+  if (!rawReg || !desc || isNaN(cost) || cost <= 0) {
     alert('Please enter a valid Registration Number, repair description, and positive cost amount.');
     return;
   }
 
-  const cleanReg = regNo.replace(/\s+/g, '');
-  const bike = bikes.find(b => (b.regNumber || '').toUpperCase().replace(/\s+/g, '') === cleanReg);
+  const cleanReg = normalizeReg(rawReg);
+  let bike = bikes.find(b => normalizeReg(b.regNumber) === cleanReg);
 
-  if (bike) {
-    // Vehicle exists in inventory - add repair & update cost basis
-    if (!bike.refurbishments) bike.refurbishments = [];
-    bike.refurbishments.push({
-      id: 'ref-' + Date.now(),
-      description: desc,
-      cost: cost,
-      date: new Date().toISOString().split('T')[0]
-    });
-
-    saveData();
-    renderWorkshopHub();
-    renderApp();
-
-    // Show success confirmation
-    if (alertEl && msgEl) {
-      msgEl.textContent = `✓ Added ${formatCurrency(cost)} repair ("${desc}") for ${bike.regNumber} (${bike.brand} ${bike.model}). Inventory cost basis updated!`;
-      alertEl.classList.remove('hidden');
-      setTimeout(() => alertEl.classList.add('hidden'), 8000);
-    }
-
-    // Reset fields for next entry
-    if (descInput) descInput.value = '';
-    if (costInput) costInput.value = '';
-    descInput?.focus();
-
-    triggerCelebrationConfetti();
-  } else {
-    // Vehicle not found in inventory
-    const createNew = confirm(`Vehicle with Registration "${regNo}" was not found in your inventory.\n\nWould you like to open the Add Bike form to record this motorcycle in inventory now?`);
-    if (createNew) {
-      openBikeModal();
-      const formReg = document.getElementById('form-reg-number');
-      if (formReg) formReg.value = regNo;
-      
-      // Pre-add this repair
-      formRefurbishments = [{
-        id: 'ref-' + Date.now(),
-        description: desc,
-        cost: cost,
-        date: new Date().toISOString().split('T')[0]
-      }];
-      renderFormRefurbishments();
-      updateFormCalculatedProfit();
-    }
+  // If vehicle is not yet in inventory, auto-create vehicle record with this Registration Number as key
+  if (!bike) {
+    bike = {
+      id: 'BIKE-' + Date.now(),
+      brand: 'Motorcycle',
+      model: rawReg,
+      variant: '',
+      regNumber: rawReg,
+      year: new Date().getFullYear(),
+      engineCC: null,
+      odometerKm: 0,
+      color: '',
+      condition: 'Good',
+      chassisNumber: '',
+      engineNumber: '',
+      image: '',
+      purchaseDate: new Date().toISOString().split('T')[0],
+      purchasePrice: 0,
+      sellerName: 'Workshop Direct Entry',
+      sellerPhone: '',
+      sellerAddress: '',
+      sellerIdProof: '',
+      status: 'Refurbishing',
+      refurbishments: [],
+      documents: { rcBook: false, insurance: false, puc: false },
+      createdAt: new Date().toISOString()
+    };
+    bikes.unshift(bike);
   }
+
+  // Add repair & update cost basis
+  if (!bike.refurbishments) bike.refurbishments = [];
+  bike.refurbishments.push({
+    id: 'ref-' + Date.now(),
+    description: desc,
+    cost: cost,
+    date: new Date().toISOString().split('T')[0]
+  });
+
+  saveData();
+  renderWorkshopHub();
+  renderApp();
+
+  // Show success confirmation
+  if (alertEl && msgEl) {
+    msgEl.innerHTML = `✓ Added <strong>${formatCurrency(cost)}</strong> repair ("${escapeHtml(desc)}") for <strong>${bike.regNumber}</strong> (${bike.brand} ${bike.model}). Reflected in Inventory & Cost Basis!`;
+    alertEl.classList.remove('hidden');
+    setTimeout(() => alertEl.classList.add('hidden'), 8000);
+  }
+
+  // Reset fields for next entry
+  if (regInput) regInput.value = '';
+  if (descInput) descInput.value = '';
+  if (costInput) costInput.value = '';
+  document.getElementById('ws-detected-bike-badge')?.classList.add('hidden');
+  regInput?.focus();
+
+  triggerCelebrationConfetti();
 }
 
 /**
@@ -589,7 +611,7 @@ function renderWorkshopHub() {
         <!-- Vehicle Model -->
         <td class="py-3 px-3">
           <div class="font-bold text-white text-xs">${bike.brand} ${bike.model}</div>
-          <div class="text-[11px] text-slate-400 font-mono">${bike.year} • ${bike.variant || 'Standard'}</div>
+          <div class="text-[11px] text-slate-400 font-mono">${bike.year}${bike.variant ? ' • ' + bike.variant : ''}</div>
         </td>
 
         <!-- Itemized Repairs Logged -->
@@ -1117,8 +1139,7 @@ function renderTableView(list, tbody) {
               </div>
               <div class="text-[11px] text-slate-400 font-mono-numbers flex items-center gap-2 mt-0.5">
                 <span class="font-bold text-brand-400 uppercase tracking-wider">${bike.regNumber}</span>
-                <span>•</span>
-                <span>${bike.variant || 'Standard'}</span>
+                ${bike.variant ? `<span>•</span><span>${bike.variant}</span>` : ''}
               </div>
             </div>
           </div>
@@ -1331,7 +1352,8 @@ function openBikeModal(bikeId = null) {
 
     document.getElementById('form-brand').value = bike.brand || '';
     document.getElementById('form-model').value = bike.model || '';
-    document.getElementById('form-variant').value = bike.variant || '';
+    const variantEl = document.getElementById('form-variant');
+    if (variantEl) variantEl.value = bike.variant || '';
     document.getElementById('form-reg-number').value = bike.regNumber || '';
     document.getElementById('form-year').value = bike.year || 2023;
     document.getElementById('form-engine-cc').value = bike.engineCC || '';
@@ -1357,6 +1379,12 @@ function openBikeModal(bikeId = null) {
     document.getElementById('form-status').value = 'In Stock';
     formRefurbishments = [];
   }
+
+  // Clear inline refurbishment fields
+  const inlineDesc = document.getElementById('form-refurb-desc-inline');
+  const inlineCost = document.getElementById('form-refurb-cost-inline');
+  if (inlineDesc) inlineDesc.value = '';
+  if (inlineCost) inlineCost.value = '';
 
   renderFormRefurbishments();
   updateFormCalculatedProfit();
@@ -1402,6 +1430,39 @@ function removeFormRefurbItem(index) {
   renderFormRefurbishments();
   updateFormCalculatedProfit();
 }
+
+// Inline Add Repair button in Bike Modal
+document.getElementById('form-add-refurb-inline-btn')?.addEventListener('click', () => {
+  const descInput = document.getElementById('form-refurb-desc-inline');
+  const costInput = document.getElementById('form-refurb-cost-inline');
+
+  const desc = descInput?.value.trim();
+  const cost = parseFloat(costInput?.value);
+
+  if (!desc) {
+    alert('Please enter a description for the repair/refurbishment expense.');
+    descInput?.focus();
+    return;
+  }
+  if (isNaN(cost) || cost <= 0) {
+    alert('Please enter a valid positive cost amount in ₹.');
+    costInput?.focus();
+    return;
+  }
+
+  formRefurbishments.push({
+    id: 'ref-' + Date.now(),
+    description: desc,
+    cost: cost,
+    date: new Date().toISOString().split('T')[0]
+  });
+
+  if (descInput) descInput.value = '';
+  if (costInput) costInput.value = '';
+
+  renderFormRefurbishments();
+  updateFormCalculatedProfit();
+});
 
 document.getElementById('form-add-refurb-btn')?.addEventListener('click', () => {
   const desc = prompt('Enter Expense Description (e.g., New Battery, Detailing, Brake Pad):');
@@ -1456,11 +1517,23 @@ function handleSaveBikeRecord() {
   const model = document.getElementById('form-model')?.value.trim();
   const regNumber = document.getElementById('form-reg-number')?.value.trim().toUpperCase();
   const purchasePrice = parseFloat(document.getElementById('form-purchase-price')?.value);
-  const sellerName = document.getElementById('form-seller-name')?.value.trim();
+  const sellerName = document.getElementById('form-seller-name')?.value.trim() || 'Previous Owner';
 
-  if (!brand || !model || !regNumber || isNaN(purchasePrice) || !sellerName) {
-    alert('Please fill all mandatory fields: Brand, Model, Registration No., Purchase Price, and Seller Name.');
+  if (!brand || !model || !regNumber || isNaN(purchasePrice)) {
+    alert('Please fill all mandatory fields: Brand, Model, Registration No., and Purchase Price.');
     return;
+  }
+
+  // Include any pending inline refurbishment input before saving
+  const inlineDesc = document.getElementById('form-refurb-desc-inline')?.value.trim();
+  const inlineCost = parseFloat(document.getElementById('form-refurb-cost-inline')?.value);
+  if (inlineDesc && !isNaN(inlineCost) && inlineCost > 0) {
+    formRefurbishments.push({
+      id: 'ref-' + Date.now(),
+      description: inlineDesc,
+      cost: inlineCost,
+      date: new Date().toISOString().split('T')[0]
+    });
   }
 
   const existingId = document.getElementById('form-bike-id')?.value;
@@ -1469,9 +1542,10 @@ function handleSaveBikeRecord() {
     id: existingId || `BIKE-${new Date().getFullYear()}-${String(bikes.length + 1).padStart(3, '0')}`,
     brand: brand,
     model: model,
-    variant: document.getElementById('form-variant')?.value.trim() || '',
+    variant: document.getElementById('form-variant')?.value.trim() || existingBike?.variant || '',
     regNumber: regNumber,
     year: parseInt(document.getElementById('form-year')?.value) || new Date().getFullYear(),
+    engineCC: parseInt(document.getElementById('form-engine-cc')?.value) || null,
     engineCC: parseInt(document.getElementById('form-engine-cc')?.value) || null,
     odometerKm: existingBike?.odometerKm || 0,
     color: existingBike?.color || '',
