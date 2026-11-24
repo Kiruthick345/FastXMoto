@@ -739,7 +739,7 @@
 
         <form id="ws-direct-repair-form" class="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
           <!-- Reg Number Input with Datalist Autocomplete -->
-          <div class="md:col-span-4">
+          <div class="md:col-span-3">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">
               Registration Number *
             </label>
@@ -748,7 +748,7 @@
                 type="text" 
                 id="ws-input-reg-no" 
                 required 
-                placeholder="e.g. MH 12 AB 4589" 
+                placeholder="e.g. TN-63-AB-2354 (AA-NN-AA-NNNN)" 
                 class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 font-bold"
               >
             </div>
@@ -760,7 +760,7 @@
           </div>
 
           <!-- Repair Work Description with Dropdown & Others -->
-          <div class="md:col-span-5">
+          <div class="md:col-span-4">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">
               Repair / Work Description *
             </label>
@@ -794,31 +794,44 @@
             </div>
           </div>
 
-          <!-- Repair Cost & Submit -->
-          <div class="md:col-span-3 flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
-            <div class="w-full sm:flex-1">
+          <!-- Repair Cost -->
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+              Repair Cost (<span class="currency-label">₹</span>) *
+            </label>
+            <input 
+              type="number" 
+              id="ws-input-repair-cost" 
+              required 
+              min="0" 
+              step="any" 
+              placeholder="Cost in ₹" 
+              class="w-full font-mono-numbers font-bold text-purple-300 bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-purple-500"
+            >
+          </div>
+
+          <!-- Repair Date & Submit -->
+          <div class="md:col-span-3 flex gap-2 items-end">
+            <div class="flex-1">
               <label class="block text-xs font-semibold text-slate-300 mb-1.5">
-                Repair Cost (<span class="currency-label">₹</span>) *
+                Repair Date
               </label>
               <input 
-                type="number" 
-                id="ws-input-repair-cost" 
-                required 
-                min="0" 
-                step="any" 
-                placeholder="Cost in ₹ (any whole number or amount)" 
-                class="w-full font-mono-numbers font-bold text-purple-300 bg-surface-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-purple-500"
+                type="date" 
+                id="ws-input-repair-date" 
+                onclick="this.showPicker && this.showPicker()"
+                class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 cursor-pointer"
               >
             </div>
 
             <!-- Submit Button -->
-            <div class="w-full sm:w-auto flex-shrink-0">
+            <div class="flex-shrink-0">
               <button 
                 type="submit" 
-                class="w-full sm:w-auto h-[40px] px-5 rounded-xl font-bold text-xs bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/25 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                class="h-[40px] px-4 rounded-xl font-bold text-xs bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/25 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
               >
                 <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
-                <span>Add Repair</span>
+                <span>Add</span>
               </button>
             </div>
           </div>
@@ -939,6 +952,44 @@
       <form id="bike-form" class="overflow-y-auto p-6 space-y-6 flex-1 text-xs">
         <input type="hidden" id="form-bike-id" value="">
 
+        <!-- BIKE PHOTO SELECTION / PREVIEW -->
+        <div class="p-4 rounded-xl bg-surface-900/80 border border-slate-800 flex flex-col sm:flex-row items-center gap-4">
+          <!-- Thumbnail Preview Container -->
+          <div class="relative w-28 h-24 sm:w-32 sm:h-24 rounded-xl overflow-hidden bg-slate-950 border border-slate-700/80 shadow-inner flex-shrink-0 flex items-center justify-center group">
+            <img id="form-bike-image-preview" src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=300&auto=format&fit=crop&q=80" alt="Bike Preview" class="w-full h-full object-cover">
+          </div>
+
+          <!-- Photo Controls -->
+          <div class="flex-1 w-full space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-slate-300 font-semibold text-xs flex items-center gap-1.5">
+                <i data-lucide="camera" class="w-3.5 h-3.5 text-brand-400"></i>
+                <span>Motorcycle Picture / Photo</span>
+              </label>
+              <button type="button" id="form-remove-photo-btn" class="text-[11px] text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 hidden">
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                <span>Remove Photo</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <!-- Upload from file -->
+              <label class="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-surface-800 hover:bg-surface-750 border border-slate-700 text-slate-200 text-xs font-semibold cursor-pointer transition-colors shadow-sm">
+                <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-400"></i>
+                <span id="form-upload-photo-label">Choose Bike Photo</span>
+                <input type="file" id="form-bike-image-file" accept="image/*" class="hidden">
+              </label>
+
+              <!-- Or paste URL -->
+              <div class="relative">
+                <input type="url" id="form-bike-image-url" placeholder="Or paste image URL (https://...)" class="w-full bg-surface-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500">
+              </div>
+            </div>
+            <input type="hidden" id="form-bike-image" value="">
+            <p class="text-[10px] text-slate-500">Upload JPG, PNG or paste image URL • Appears in bike cards and records</p>
+          </div>
+        </div>
+
         <!-- SECTION 1: VEHICLE SPECIFICATIONS -->
         <div>
           <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800 text-brand-400 font-bold uppercase tracking-wider text-[11px]">
@@ -949,21 +1000,29 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Make / Brand *</label>
-              <input type="text" id="form-brand" required placeholder="e.g. Royal Enfield, Yamaha" list="brand-suggestions" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
-              <datalist id="brand-suggestions">
-                <option value="Royal Enfield">
-                <option value="Yamaha">
-                <option value="KTM">
-                <option value="Honda">
-                <option value="Bajaj">
-                <option value="TVS">
-                <option value="Kawasaki">
-                <option value="Suzuki">
-                <option value="Hero">
-                <option value="Harley-Davidson">
-                <option value="BMW">
-                <option value="Triumph">
-              </datalist>
+              <div class="space-y-1.5">
+                <select id="form-brand-select" required class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500 cursor-pointer">
+                  <option value="" disabled selected>-- Select Make / Brand --</option>
+                  <option value="Royal Enfield">Royal Enfield</option>
+                  <option value="Yamaha">Yamaha</option>
+                  <option value="KTM">KTM</option>
+                  <option value="Honda">Honda</option>
+                  <option value="Bajaj">Bajaj</option>
+                  <option value="TVS">TVS</option>
+                  <option value="Hero">Hero</option>
+                  <option value="Suzuki">Suzuki</option>
+                  <option value="Kawasaki">Kawasaki</option>
+                  <option value="Harley-Davidson">Harley-Davidson</option>
+                  <option value="BMW">BMW</option>
+                  <option value="Triumph">Triumph</option>
+                  <option value="Jawa / Yezdi">Jawa / Yezdi</option>
+                  <option value="Ducati">Ducati</option>
+                  <option value="Ather">Ather</option>
+                  <option value="Ola Electric">Ola Electric</option>
+                  <option value="Others">Others</option>
+                </select>
+                <input type="text" id="form-brand-custom" placeholder="Type custom Make / Brand..." class="hidden w-full bg-surface-900 border border-brand-500/70 rounded-xl px-3 py-1.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500">
+              </div>
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Model Name *</label>
@@ -971,7 +1030,7 @@
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Registration No. *</label>
-              <input type="text" id="form-reg-number" required placeholder="e.g. MH 12 AB 1234" class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500 font-bold">
+              <input type="text" id="form-reg-number" required placeholder="e.g. TN-63-AB-2354 (AA-NN-AA-NNNN)" maxlength="16" class="w-full uppercase font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500 font-bold">
               <div id="modal-reg-lookup-badge" class="hidden mt-1.5 text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                 <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
                 <span id="modal-reg-lookup-text">Existing vehicle found! Loaded details.</span>
@@ -998,7 +1057,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Purchase Date *</label>
-              <input type="date" id="form-purchase-date" required class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+              <input type="date" id="form-purchase-date" required onclick="this.showPicker && this.showPicker()" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500 cursor-pointer">
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Purchase Price (<span class="currency-label">₹</span>) *</label>
@@ -1024,9 +1083,10 @@
             </div>
           </div>
 
-          <!-- Direct Input Row for Repair Cost & Description with Dropdown -->
+          <!-- Direct Input Row for Repair Cost, Date & Description with Dropdown -->
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3">
-            <div class="sm:col-span-6 space-y-1.5">
+            <div class="sm:col-span-4 space-y-1.5">
+              <label class="block text-[11px] text-slate-400 font-semibold mb-0.5">Repair / Work Description *</label>
               <select id="form-refurb-desc-select" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-purple-500 cursor-pointer">
                 <option value="" disabled selected>-- Select Repair Work --</option>
                 <option value="General Service & Tuning">General Service & Tuning</option>
@@ -1045,11 +1105,16 @@
               </select>
               <input type="text" id="form-refurb-desc-inline" placeholder="Type custom repair description..." class="hidden w-full bg-surface-900 border border-purple-500/70 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500">
             </div>
-            <div class="sm:col-span-4">
+            <div class="sm:col-span-3">
+              <label class="block text-[11px] text-slate-400 font-semibold mb-0.5">Repair Cost (<span class="currency-label">₹</span>) *</label>
               <input type="number" id="form-refurb-cost-inline" placeholder="Repair Cost (₹)" min="0" step="any" class="w-full font-mono-numbers bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-purple-300 font-bold placeholder-slate-500 focus:outline-none focus:border-purple-500">
             </div>
-            <div class="sm:col-span-2">
-              <button type="button" id="form-add-refurb-inline-btn" class="w-full h-full py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1">
+            <div class="sm:col-span-3">
+              <label class="block text-[11px] text-slate-400 font-semibold mb-0.5">Expense Date</label>
+              <input type="date" id="form-refurb-date-inline" onclick="this.showPicker && this.showPicker()" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-purple-500 cursor-pointer">
+            </div>
+            <div class="sm:col-span-2 flex items-end">
+              <button type="button" id="form-add-refurb-inline-btn" class="w-full h-[36px] bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1 shadow-md">
                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                 <span>Add</span>
               </button>
@@ -1090,7 +1155,7 @@
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Sale Date</label>
-              <input type="date" id="form-sale-date" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+              <input type="date" id="form-sale-date" onclick="this.showPicker && this.showPicker()" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500 cursor-pointer">
             </div>
             <div>
               <label class="block text-slate-300 font-semibold mb-1">Buyer Full Name</label>
@@ -1175,7 +1240,7 @@
           </div>
           <div>
             <label class="block text-slate-300 font-semibold mb-1">Sale Date *</label>
-            <input type="date" id="qs-sale-date" required class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500">
+            <input type="date" id="qs-sale-date" required onclick="this.showPicker && this.showPicker()" class="w-full bg-surface-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-500 cursor-pointer">
           </div>
         </div>
 
@@ -1250,7 +1315,7 @@
             <input type="text" id="new-refurb-desc" placeholder="Type custom repair description..." class="hidden w-full bg-surface-850 border border-purple-500/70 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
             <div class="grid grid-cols-2 gap-2">
               <input type="number" id="new-refurb-cost" placeholder="Cost (₹)" min="0" class="w-full font-mono-numbers bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
-              <input type="date" id="new-refurb-date" class="w-full bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
+              <input type="date" id="new-refurb-date" onclick="this.showPicker && this.showPicker()" class="w-full bg-surface-850 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500 cursor-pointer">
             </div>
             <button type="button" id="add-refurb-item-btn" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5">
               <i data-lucide="plus" class="w-4 h-4"></i>

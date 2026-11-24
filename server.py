@@ -30,7 +30,7 @@ def ensure_excel_database_exists():
         'Purchase_Date', 'Purchase_Price', 'Seller_Name', 'Seller_Phone',
         'Workshop_Total_Cost', 'Total_Cost_Basis', 'Status',
         'Selling_Price', 'Sale_Date', 'Buyer_Name', 'Buyer_Phone',
-        'Net_Profit', 'Created_At'
+        'Net_Profit', 'Created_At', 'Image_URL'
     ]
     ws1.append(headers_v)
     _style_header_row(ws1, '1E293B', 'F8FAFC')
@@ -137,6 +137,7 @@ def read_database_from_excel():
             buyer_name = str(row[15] or '') if len(row) > 15 else ''
             buyer_phone = str(row[16] or '') if len(row) > 16 else ''
             created_at = str(row[18] or '') if len(row) > 18 else ''
+            image_url = str(row[19] or '') if len(row) > 19 else ''
 
             refurb_list = repairs_by_reg.get(clean_reg, [])
 
@@ -157,6 +158,7 @@ def read_database_from_excel():
                 'saleDate': sale_date,
                 'buyerName': buyer_name,
                 'buyerPhone': buyer_phone,
+                'image': image_url,
                 'refurbishments': refurb_list,
                 'documents': {'rcBook': False, 'insurance': False, 'puc': False},
                 'createdAt': created_at
@@ -184,7 +186,7 @@ def save_database_to_excel(bikes):
         'Purchase_Date', 'Purchase_Price', 'Seller_Name', 'Seller_Phone',
         'Workshop_Total_Cost', 'Total_Cost_Basis', 'Status',
         'Selling_Price', 'Sale_Date', 'Buyer_Name', 'Buyer_Phone',
-        'Net_Profit', 'Created_At'
+        'Net_Profit', 'Created_At', 'Image_URL'
     ]
     ws1.append(headers_v)
     _style_header_row(ws1, '1E293B', 'F8FAFC')
@@ -219,7 +221,8 @@ def save_database_to_excel(bikes):
             b.get('buyerName', ''),
             b.get('buyerPhone', ''),
             profit,
-            b.get('createdAt', '')
+            b.get('createdAt', ''),
+            b.get('image', '')
         ]
         ws1.append(row_v)
 
@@ -328,6 +331,46 @@ class FastXRequestHandler(SimpleHTTPRequestHandler):
                     'count': len(bikes)
                 }
                 self.wfile.write(json.dumps(response).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+            return
+
+        elif self.path == '/api/upload-image' or self.path == '/api/upload-image/':
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            try:
+                import base64, time, re
+                data = json.loads(body)
+                image_data = data.get('image', '')
+                if not image_data:
+                    raise ValueError('No image data provided')
+
+                uploads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+                os.makedirs(uploads_dir, exist_ok=True)
+
+                ext = 'jpg'
+                if 'data:image/png' in image_data:
+                    ext = 'png'
+                elif 'data:image/webp' in image_data:
+                    ext = 'webp'
+                elif 'data:image/jpeg' in image_data or 'data:image/jpg' in image_data:
+                    ext = 'jpg'
+
+                safe_name = f"bike_{int(time.time() * 1000)}.{ext}"
+                base64_data = re.sub(r'^data:image\/[a-zA-Z0-9\+\-\.]+;base64,', '', image_data)
+                file_bytes = base64.b64decode(base64_data)
+                file_path = os.path.join(uploads_dir, safe_name)
+                with open(file_path, 'wb') as f:
+                    f.write(file_bytes)
+
+                relative_url = f"uploads/{safe_name}"
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'success', 'url': relative_url}).encode('utf-8'))
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')

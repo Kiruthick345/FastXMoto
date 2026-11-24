@@ -244,3 +244,24 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* Calendar Date Picker Styling */
+input[type="date"] {
+  cursor: pointer;
+  position: relative;
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  filter: invert(0.85) sepia(60%) saturate(600%) hue-rotate(345deg);
+  opacity: 0.9;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+

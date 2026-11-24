@@ -520,6 +520,56 @@ function normalizeReg(reg) {
 }
 
 /**
+ * Format vehicle registration number to standard Indian plate format (AA-NN-AA-NNNN)
+ * e.g. "TN63AB2354" -> "TN-63-AB-2354", "MH12DE1433" -> "MH-12-DE-1433"
+ */
+function formatRegNumber(raw) {
+  if (!raw) return '';
+  const clean = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!clean) return '';
+  const m = clean.match(/^([A-Z]{2})(\d{1,2})?([A-Z]{1,3})?(\d{1,4})?$/);
+  if (m) {
+    return [m[1], m[2], m[3], m[4]].filter(Boolean).join('-');
+  }
+  return clean;
+}
+
+/**
+ * Helpers for Make / Brand dropdown with "Others" custom input
+ */
+function getFormBrand() {
+  const sel = document.getElementById('form-brand-select');
+  const custom = document.getElementById('form-brand-custom');
+  if (sel?.value === 'Others') {
+    return (custom?.value || '').trim();
+  }
+  return (sel?.value || custom?.value || '').trim();
+}
+
+function setFormBrand(brandName) {
+  const sel = document.getElementById('form-brand-select');
+  const custom = document.getElementById('form-brand-custom');
+  if (!sel) return;
+  const brand = (brandName || '').trim();
+  if (!brand) {
+    sel.value = '';
+    custom?.classList.add('hidden');
+    if (custom) custom.value = '';
+    return;
+  }
+  const standardOptions = Array.from(sel.options).map(o => o.value).filter(v => v && v !== 'Others');
+  if (standardOptions.includes(brand)) {
+    sel.value = brand;
+    custom?.classList.add('hidden');
+    if (custom) custom.value = '';
+  } else {
+    sel.value = 'Others';
+    custom?.classList.remove('hidden');
+    if (custom) custom.value = brand;
+  }
+}
+
+/**
  * Calculate profit/loss and margin % for a bike
  */
 function getBikeProfitMetrics(bike) {
@@ -618,6 +668,19 @@ function setupWorkshopEventListeners() {
   regInput?.addEventListener('input', checkRegInput);
   regInput?.addEventListener('change', checkRegInput);
 
+  // Workshop repair date default to today
+  const wsDateInput = document.getElementById('ws-input-repair-date');
+  if (wsDateInput && !wsDateInput.value) {
+    wsDateInput.value = new Date().toISOString().split('T')[0];
+  }
+
+  // Registration auto-format on blur in Workshop
+  document.getElementById('ws-input-reg-no')?.addEventListener('blur', function() {
+    if (this.value) {
+      this.value = formatRegNumber(this.value);
+    }
+  });
+
   // Dropdown with "Others" on Workshop Quick Repair Description
   const wsDescSelect = document.getElementById('ws-select-repair-desc');
   const wsDescInput = document.getElementById('ws-input-repair-desc');
@@ -711,12 +774,15 @@ function handleDirectRepairSubmit(e) {
   document.getElementById('ws-repair-error-alert')?.classList.add('hidden');
 
   // Add repair & update cost basis
+  const dateInput = document.getElementById('ws-input-repair-date');
+  const repairDate = dateInput?.value || new Date().toISOString().split('T')[0];
+
   if (!bike.refurbishments) bike.refurbishments = [];
   bike.refurbishments.push({
     id: 'ref-' + Date.now(),
     description: desc,
     cost: cost,
-    date: new Date().toISOString().split('T')[0]
+    date: repairDate
   });
 
   saveData();
@@ -725,7 +791,7 @@ function handleDirectRepairSubmit(e) {
 
   // Show success confirmation
   if (alertEl && msgEl) {
-    msgEl.innerHTML = `✓ Added <strong>${formatCurrency(cost)}</strong> repair ("${escapeHtml(desc)}") for <strong>${bike.regNumber}</strong> (${bike.brand} ${bike.model}). Reflected in Inventory & Cost Basis!`;
+    msgEl.innerHTML = `✓ Added <strong>${formatCurrency(cost)}</strong> repair ("${escapeHtml(desc)}") on ${escapeHtml(repairDate)} for <strong>${escapeHtml(formatRegNumber(bike.regNumber))}</strong> (${bike.brand} ${bike.model}). Reflected in Inventory & Cost Basis!`;
     alertEl.classList.remove('hidden');
     setTimeout(() => alertEl.classList.add('hidden'), 8000);
   }
@@ -816,14 +882,14 @@ function renderWorkshopHub() {
         <!-- Registration No. -->
         <td class="py-3 px-4">
           <span class="inline-block px-2.5 py-1 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-400 font-mono font-bold uppercase tracking-wider text-xs">
-            ${bike.regNumber}
+            ${escapeHtml(formatRegNumber(bike.regNumber))}
           </span>
         </td>
 
         <!-- Vehicle Model -->
         <td class="py-3 px-3">
-          <div class="font-bold text-white text-xs">${bike.brand} ${bike.model}</div>
-          <div class="text-[11px] text-slate-400 font-mono">${bike.year}${bike.variant ? ' • ' + bike.variant : ''}</div>
+          <div class="font-bold text-white text-xs">${escapeHtml(bike.brand)} ${escapeHtml(bike.model)}</div>
+          <div class="text-[11px] text-slate-400 font-mono">${bike.year}${bike.variant ? ' • ' + escapeHtml(bike.variant) : ''}</div>
         </td>
 
         <!-- Itemized Repairs Logged -->
@@ -831,7 +897,8 @@ function renderWorkshopHub() {
           <div class="flex flex-wrap gap-1.5 max-w-xl">
             ${refurbItems.map((r, idx) => `
               <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/25 text-purple-300 text-[11px]">
-                <span class="font-medium">${r.description}</span>
+                <span class="font-medium">${escapeHtml(r.description)}</span>
+                ${r.date ? `<span class="text-[9px] text-purple-400 font-mono">${escapeHtml(r.date)}</span>` : ''}
                 <span class="font-mono font-bold text-white text-[10px]">${formatCurrency(r.cost)}</span>
                 <button type="button" onclick="removeWorkshopRepair('${bike.id}', ${idx})" class="text-purple-400 hover:text-rose-400 transition-colors ml-0.5 font-bold" title="Delete this repair">
                   ×
@@ -1107,6 +1174,17 @@ function setupEventListeners() {
   // Print Summary
   document.getElementById('footer-print-summary-btn')?.addEventListener('click', () => window.print());
   document.getElementById('print-invoice-btn')?.addEventListener('click', () => window.print());
+
+  // Calendar picker interactive activation on click for all date inputs
+  document.querySelectorAll('input[type="date"]').forEach(input => {
+    input.addEventListener('click', function() {
+      try {
+        if (typeof this.showPicker === 'function') {
+          this.showPicker();
+        }
+      } catch (err) {}
+    });
+  });
 }
 
 function setupModalCloseButtons() {
@@ -1352,8 +1430,8 @@ function renderTableView(list, tbody) {
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-normal">${bike.year}</span>
               </div>
               <div class="text-[11px] text-slate-400 font-mono-numbers flex items-center gap-2 mt-0.5">
-                <span class="font-bold text-brand-400 uppercase tracking-wider">${bike.regNumber}</span>
-                ${bike.variant ? `<span>•</span><span>${bike.variant}</span>` : ''}
+                <span class="font-bold text-brand-400 uppercase tracking-wider">${escapeHtml(formatRegNumber(bike.regNumber))}</span>
+                ${bike.variant ? `<span>•</span><span>${escapeHtml(bike.variant)}</span>` : ''}
               </div>
             </div>
           </div>
@@ -1448,8 +1526,8 @@ function renderGridView(list, grid) {
             </div>
 
             <div class="absolute top-3 right-3">
-              <span class="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white font-mono-numbers text-xs font-bold border border-white/10 uppercase">
-                ${bike.regNumber}
+              <span class="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white font-mono-numbers text-xs font-bold border border-white/10 uppercase tracking-wide">
+                ${escapeHtml(formatRegNumber(bike.regNumber))}
               </span>
             </div>
 
@@ -1560,20 +1638,41 @@ function openBikeModal(bikeId = null) {
 
   lookupBadge?.classList.add('hidden');
 
+  const defaultPlaceholder = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=400&auto=format&fit=crop&q=80';
+  const previewEl = document.getElementById('form-bike-image-preview');
+  const hiddenImageEl = document.getElementById('form-bike-image');
+  const urlInputEl = document.getElementById('form-bike-image-url');
+  const fileInputEl = document.getElementById('form-bike-image-file');
+  const removeBtnEl = document.getElementById('form-remove-photo-btn');
+  if (fileInputEl) fileInputEl.value = '';
+
   if (bikeId) {
     const bike = bikes.find(b => b.id === bikeId);
     if (!bike) return;
 
-    title.textContent = `Edit Record: ${bike.brand} ${bike.model} (${bike.regNumber})`;
+    title.textContent = `Edit Record: ${bike.brand} ${bike.model} (${formatRegNumber(bike.regNumber)})`;
     formId.value = bike.id;
 
-    document.getElementById('form-brand').value = bike.brand || '';
+    setFormBrand(bike.brand);
     document.getElementById('form-model').value = bike.model || '';
     const variantEl = document.getElementById('form-variant');
     if (variantEl) variantEl.value = bike.variant || '';
-    document.getElementById('form-reg-number').value = bike.regNumber || '';
+    document.getElementById('form-reg-number').value = formatRegNumber(bike.regNumber) || '';
     document.getElementById('form-year').value = bike.year || 2023;
     document.getElementById('form-engine-cc').value = bike.engineCC || '';
+
+    // Bike photo
+    if (bike.image) {
+      if (previewEl) previewEl.src = bike.image;
+      if (hiddenImageEl) hiddenImageEl.value = bike.image;
+      if (urlInputEl) urlInputEl.value = (bike.image.startsWith('http://') || bike.image.startsWith('https://')) ? bike.image : '';
+      removeBtnEl?.classList.remove('hidden');
+    } else {
+      if (previewEl) previewEl.src = defaultPlaceholder;
+      if (hiddenImageEl) hiddenImageEl.value = '';
+      if (urlInputEl) urlInputEl.value = '';
+      removeBtnEl?.classList.add('hidden');
+    }
 
     document.getElementById('form-purchase-date').value = bike.purchaseDate || '';
     document.getElementById('form-purchase-price').value = bike.purchasePrice || '';
@@ -1591,22 +1690,29 @@ function openBikeModal(bikeId = null) {
     title.textContent = 'Add Motorcycle Record';
     form.reset();
     formId.value = '';
+    setFormBrand('');
+    if (previewEl) previewEl.src = defaultPlaceholder;
+    if (hiddenImageEl) hiddenImageEl.value = '';
+    if (urlInputEl) urlInputEl.value = '';
+    removeBtnEl?.classList.add('hidden');
     document.getElementById('form-purchase-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('form-year').value = new Date().getFullYear();
     document.getElementById('form-status').value = 'In Stock';
     formRefurbishments = [];
   }
 
-  // Clear inline refurbishment fields
+  // Clear inline refurbishment fields and set default date
   const modalDescSelect = document.getElementById('form-refurb-desc-select');
   const inlineDesc = document.getElementById('form-refurb-desc-inline');
   const inlineCost = document.getElementById('form-refurb-cost-inline');
+  const inlineDate = document.getElementById('form-refurb-date-inline');
   if (modalDescSelect) modalDescSelect.value = '';
   if (inlineDesc) {
     inlineDesc.value = '';
     inlineDesc.classList.add('hidden');
   }
   if (inlineCost) inlineCost.value = '';
+  if (inlineDate) inlineDate.value = new Date().toISOString().split('T')[0];
 
   renderFormRefurbishments();
   updateFormCalculatedProfit();
@@ -1642,7 +1748,7 @@ function setupModalRegistrationLookup() {
     if (existingBike && (!currentEditingId || existingBike.id !== currentEditingId)) {
       // Auto-populate specifications, purchase, and selling details
       document.getElementById('form-bike-id').value = existingBike.id;
-      document.getElementById('form-brand').value = existingBike.brand || '';
+      setFormBrand(existingBike.brand);
       document.getElementById('form-model').value = existingBike.model || '';
       document.getElementById('form-year').value = existingBike.year || new Date().getFullYear();
       document.getElementById('form-engine-cc').value = existingBike.engineCC || '';
@@ -1650,6 +1756,18 @@ function setupModalRegistrationLookup() {
       document.getElementById('form-purchase-price').value = existingBike.purchasePrice || 0;
       document.getElementById('form-seller-name').value = existingBike.sellerName || '';
       document.getElementById('form-seller-phone').value = existingBike.sellerPhone || '';
+
+      // Bike photo
+      const previewEl = document.getElementById('form-bike-image-preview');
+      const hiddenImageEl = document.getElementById('form-bike-image');
+      const urlInputEl = document.getElementById('form-bike-image-url');
+      const removeBtnEl = document.getElementById('form-remove-photo-btn');
+      if (existingBike.image) {
+        if (previewEl) previewEl.src = existingBike.image;
+        if (hiddenImageEl) hiddenImageEl.value = existingBike.image;
+        if (urlInputEl) urlInputEl.value = (existingBike.image.startsWith('http://') || existingBike.image.startsWith('https://')) ? existingBike.image : '';
+        removeBtnEl?.classList.remove('hidden');
+      }
 
       // Section 4 Selling Information
       document.getElementById('form-status').value = existingBike.status || 'In Stock';
@@ -1664,7 +1782,7 @@ function setupModalRegistrationLookup() {
 
       const modalTitle = document.getElementById('bike-modal-title');
       if (modalTitle) {
-        modalTitle.textContent = `Update Record: ${existingBike.brand} ${existingBike.model} (${existingBike.regNumber})`;
+        modalTitle.textContent = `Update Record: ${existingBike.brand} ${existingBike.model} (${formatRegNumber(existingBike.regNumber)})`;
       }
 
       if (lookupBadge && lookupText) {
@@ -1678,6 +1796,11 @@ function setupModalRegistrationLookup() {
 
   regInput.addEventListener('input', handleLookup);
   regInput.addEventListener('change', handleLookup);
+  regInput.addEventListener('blur', function() {
+    if (this.value) {
+      this.value = formatRegNumber(this.value);
+    }
+  });
 }
 
 function renderFormRefurbishments() {
@@ -1736,6 +1859,7 @@ modalDescSelect?.addEventListener('change', (e) => {
 // Inline Add Repair button in Bike Modal
 document.getElementById('form-add-refurb-inline-btn')?.addEventListener('click', () => {
   const costInput = document.getElementById('form-refurb-cost-inline');
+  const dateInput = document.getElementById('form-refurb-date-inline');
 
   let desc = '';
   if (modalDescSelect?.value === 'Others') {
@@ -1744,6 +1868,7 @@ document.getElementById('form-add-refurb-inline-btn')?.addEventListener('click',
     desc = modalDescSelect?.value || modalDescInput?.value.trim() || '';
   }
   const cost = parseFloat(costInput?.value);
+  const expenseDate = dateInput?.value || new Date().toISOString().split('T')[0];
 
   if (!desc) {
     alert('Please select or enter a description for the repair/refurbishment expense.');
@@ -1764,7 +1889,7 @@ document.getElementById('form-add-refurb-inline-btn')?.addEventListener('click',
     id: 'ref-' + Date.now(),
     description: desc,
     cost: cost,
-    date: new Date().toISOString().split('T')[0]
+    date: expenseDate
   });
 
   if (modalDescSelect) modalDescSelect.value = '';
@@ -1776,6 +1901,82 @@ document.getElementById('form-add-refurb-inline-btn')?.addEventListener('click',
 
   renderFormRefurbishments();
   updateFormCalculatedProfit();
+});
+
+// Dropdown with "Others" on Make / Brand
+document.getElementById('form-brand-select')?.addEventListener('change', function() {
+  const custom = document.getElementById('form-brand-custom');
+  if (this.value === 'Others') {
+    custom?.classList.remove('hidden');
+    custom?.focus();
+  } else {
+    custom?.classList.add('hidden');
+    if (custom) custom.value = '';
+  }
+});
+
+// Photo Upload File Input
+document.getElementById('form-bike-image-file')?.addEventListener('change', function(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(evt) {
+    const dataUrl = evt.target.result;
+    const preview = document.getElementById('form-bike-image-preview');
+    const hiddenInput = document.getElementById('form-bike-image');
+    const removeBtn = document.getElementById('form-remove-photo-btn');
+    if (preview) preview.src = dataUrl;
+    if (hiddenInput) hiddenInput.value = dataUrl;
+    removeBtn?.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl, filename: file.name })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url && hiddenInput) {
+          hiddenInput.value = data.url;
+        }
+      }
+    } catch (err) {
+      // Keep dataUrl if server unreachable
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+// Photo URL Input
+document.getElementById('form-bike-image-url')?.addEventListener('input', function() {
+  const url = this.value.trim();
+  const preview = document.getElementById('form-bike-image-preview');
+  const hiddenInput = document.getElementById('form-bike-image');
+  const removeBtn = document.getElementById('form-remove-photo-btn');
+  if (url) {
+    if (preview) preview.src = url;
+    if (hiddenInput) hiddenInput.value = url;
+    removeBtn?.classList.remove('hidden');
+  } else if (!document.getElementById('form-bike-image-file')?.files?.length) {
+    if (preview) preview.src = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=400&auto=format&fit=crop&q=80';
+    if (hiddenInput) hiddenInput.value = '';
+    removeBtn?.classList.add('hidden');
+  }
+});
+
+// Remove Photo Button
+document.getElementById('form-remove-photo-btn')?.addEventListener('click', function() {
+  const preview = document.getElementById('form-bike-image-preview');
+  const hiddenInput = document.getElementById('form-bike-image');
+  const urlInput = document.getElementById('form-bike-image-url');
+  const fileInput = document.getElementById('form-bike-image-file');
+  if (preview) preview.src = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=400&auto=format&fit=crop&q=80';
+  if (hiddenInput) hiddenInput.value = '';
+  if (urlInput) urlInput.value = '';
+  if (fileInput) fileInput.value = '';
+  this.classList.add('hidden');
 });
 
 document.getElementById('form-add-refurb-btn')?.addEventListener('click', () => {
@@ -1827,9 +2028,10 @@ function updateFormCalculatedProfit() {
 }
 
 function handleSaveBikeRecord() {
-  const brand = document.getElementById('form-brand')?.value.trim();
+  const brand = getFormBrand();
   const model = document.getElementById('form-model')?.value.trim();
-  const regNumber = document.getElementById('form-reg-number')?.value.trim().toUpperCase();
+  const rawReg = document.getElementById('form-reg-number')?.value.trim();
+  const regNumber = formatRegNumber(rawReg);
   const purchasePrice = parseFloat(document.getElementById('form-purchase-price')?.value);
   const sellerName = document.getElementById('form-seller-name')?.value.trim() || 'Previous Owner';
 
@@ -1842,6 +2044,8 @@ function handleSaveBikeRecord() {
   const pendingSelect = document.getElementById('form-refurb-desc-select');
   const pendingInput = document.getElementById('form-refurb-desc-inline');
   const inlineCost = parseFloat(document.getElementById('form-refurb-cost-inline')?.value);
+  const inlineDateInput = document.getElementById('form-refurb-date-inline');
+  const inlineExpenseDate = inlineDateInput?.value || new Date().toISOString().split('T')[0];
   let inlineDesc = '';
   if (pendingSelect?.value === 'Others') {
     inlineDesc = pendingInput?.value.trim() || '';
@@ -1853,7 +2057,7 @@ function handleSaveBikeRecord() {
       id: 'ref-' + Date.now(),
       description: inlineDesc,
       cost: inlineCost,
-      date: new Date().toISOString().split('T')[0]
+      date: inlineExpenseDate
     });
   }
 
@@ -1873,6 +2077,8 @@ function handleSaveBikeRecord() {
     status = 'Sold';
   }
 
+  const bikeImage = document.getElementById('form-bike-image')?.value.trim() || matchedBike?.image || '';
+
   const bikeRecord = {
     id: matchedBike ? matchedBike.id : `BIKE-${new Date().getFullYear()}-${String(bikes.length + 1).padStart(3, '0')}`,
     brand: brand,
@@ -1886,7 +2092,7 @@ function handleSaveBikeRecord() {
     condition: matchedBike?.condition || 'Good',
     chassisNumber: matchedBike?.chassisNumber || '',
     engineNumber: matchedBike?.engineNumber || '',
-    image: matchedBike?.image || '',
+    image: bikeImage,
 
     purchaseDate: document.getElementById('form-purchase-date')?.value || new Date().toISOString().split('T')[0],
     sellerName: sellerName,
@@ -1949,7 +2155,7 @@ function openQuickSaleModal(bikeId) {
 
   const modal = document.getElementById('quick-sale-modal');
   document.getElementById('qs-bike-id').value = bike.id;
-  document.getElementById('qs-bike-title').textContent = `${bike.brand} ${bike.model} • ${bike.regNumber}`;
+  document.getElementById('qs-bike-title').textContent = `${bike.brand} ${bike.model} • ${formatRegNumber(bike.regNumber)}`;
 
   const costBasis = getCostBasis(bike);
   const refurbTotal = (bike.refurbishments || []).reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
@@ -2106,8 +2312,8 @@ function generateBillOfSale(bikeId) {
         </thead>
         <tbody class="divide-y divide-slate-200 text-slate-800">
           <tr>
-            <td class="p-2.5 font-bold">${bike.brand} ${bike.model} <span class="text-slate-500 font-normal">(${bike.variant || 'Standard'})</span></td>
-            <td class="p-2.5 font-mono font-bold text-orange-600 uppercase">${bike.regNumber}</td>
+            <td class="p-2.5 font-bold">${escapeHtml(bike.brand)} ${escapeHtml(bike.model)} <span class="text-slate-500 font-normal">(${escapeHtml(bike.variant || 'Standard')})</span></td>
+            <td class="p-2.5 font-mono font-bold text-orange-600 uppercase">${escapeHtml(formatRegNumber(bike.regNumber))}</td>
             <td class="p-2.5 font-mono">${bike.year}</td>
             <td class="p-2.5">${bike.engineCC ? bike.engineCC + ' CC' : 'Standard'}</td>
           </tr>
